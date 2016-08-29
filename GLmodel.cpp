@@ -382,8 +382,8 @@ void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber
 
             /* ============================ FOOTER ============================ */
             fluxOut << "\n# End of File ";
-            newFile.close();
         }
+        newFile.close();
     }
 
     else

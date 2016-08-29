@@ -20,6 +20,7 @@ struct Model{
 
 public :
     GLuint texture[1], model;
+    GLfloat tumorRadius;
     bool squareFile, vnFile, vtFile;
     QString modelName, fileName, mtllib, textureName;
     QVector3D position, origin;
@@ -27,8 +28,7 @@ public :
     QQuaternion rotation;
 
     Model(){squareFile = vnFile = vtFile = false;
-            texture[0] = 0;
-            model = 0;
+            texture[0] = model = tumorRadius = 0;
             color = QVector4D(1.f, 1.f, 1.f, 1.f);}
 };
 

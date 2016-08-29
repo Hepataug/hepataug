@@ -31,7 +31,7 @@ signals:
     void addModel();
     void saveModels();
     void removeModels();
-    void changeColor(QColor newColor);
+    void modelColor(QColor newColor);
     void addTexture();
 
     void selectedModelChanged(QString selectedItem);
@@ -46,11 +46,14 @@ public slots:
     void emitSaveModels();
     void emitRemoveModels();
     void emitChangeColor();
+    void changeColor(QColor newColor);
     void emitAddTexture();
     void emitReferenceModel();
 
     void updateModelsList(QStringList items);
     void updateCheckedModels();
+
+    void changeCheckState(QListWidgetItem* item);
 };
 
 #endif // MODELSLISTWIDGET_H

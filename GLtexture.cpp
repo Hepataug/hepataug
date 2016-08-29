@@ -3,6 +3,7 @@
 GLtexture::GLtexture()
 {
     glGenTextures(1, &texture[0]);
+    screenshotNumber = 1;
 }
 
 
@@ -33,6 +34,17 @@ void GLtexture::setTexture(Mat textureMat)
 
     glTexImage2D(GL_TEXTURE_2D, 0, 3, qim_Texture.width(), qim_Texture.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, qim_Texture.bits());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+}
+void GLtexture::saveTexture(Mat textureMat, QString path)
+{
+    QImage qim_Texture = matToQImage(textureMat);
+
+    QString format = "png";
+    QString fileName = path + QString("/background%1.%2").arg(screenshotNumber).arg(format);
+
+    qim_Texture.save(fileName, qPrintable(format));
+
+    screenshotNumber++;
 }
 
 QImage GLtexture::matToQImage(Mat const& image)

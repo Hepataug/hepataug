@@ -10,13 +10,12 @@ OpenGLWidget::OpenGLWidget(QWidget *parent) : QGLWidget(parent)
     scaleFactor = 0.001;                         // Millimeters to meters conversion
     frame_picture_Ratio = 0.1;                   // Size of the black frame relative to image size
     sensibility = 0.01, sensibilityPlus = 0.001; // Sensibility of the translation (m)
-    rotationSpeed = 3;
+    rotationSpeed = 360;
     referenceModel = -1;
+    screenshotNumber = 1;
 
-    tumorMode = false;                           // "Add/Move Tumor" mode OFF
-    tumor = 0;                                   // Tumor OFF
-    tumorRadius = 0.01;                          // Radius of the tumor (m)
-    coordTumor = QVector3D(0,0,0);               // Tumor translation
+    defaultTumorRadius = 0.05;                   // Default radius of the tumor (m)
+    tumorDepth = 0.3;                            // Default depth of the tumor (m)
 
     crosshair = tags = 0;                        // Crosshair, tags OFF
     tagsRadius = 0.001;                          // Tags radius
@@ -31,6 +30,11 @@ void OpenGLWidget::initializeGL()   // OPENGL SPACE INITIALIZATION
 {
     glEnable(GL_BLEND);                                 // Opacity ON
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // Opacity parameters
+    /*glBlendFunc(GL_ZERO, GL_SRC_COLOR);
+  //  glBlendFunc(GL_ONE, GL_ONE);
+
+    glAlphaFunc(GL_GREATER, 0.1);
+    glEnable(GL_ALPHA_TEST);*/
 
   // Default texture initialization
     backgroundTexture.setTexture(QString("./img/standardPicture1.jpg"));
@@ -51,10 +55,7 @@ void OpenGLWidget::initializeGL()   // OPENGL SPACE INITIALIZATION
     glEndList();
 
   // Default model initialization
-    checkedModels.push_back(0);
-    modelsList << "./img/modelRéduit50%.obj";
-    model.loadModel(modelsList.at(0), 0);
-    emit modelsChanged();
+    addModel(QString("./img/modelRéduit50%.obj"));
     resetCameraSettings();
 }
 void OpenGLWidget::resetCameraSettings()
@@ -74,11 +75,11 @@ void OpenGLWidget::resetCameraSettings()
         cameraParameters[4] = 572.27194900491202;  // v, image center ordinate (px)*/
 
         // PICTURES N°2
-      /*  cameraParameters[0] = 3215.0213146269689;  // alphaX, focal (px)
+        cameraParameters[0] = 3215.0213146269689;  // alphaX, focal (px)
         cameraParameters[1] = 3227.1754390328997;  // alphaY, focal (px)
         cameraParameters[2] = 8.7179384749909108;  // skewness
         cameraParameters[3] = 483.46333094489626;  // u, image center abscissa (px)
-        cameraParameters[4] = 472.53980666143559;  // v, image center ordinate (px)*/
+        cameraParameters[4] = 472.53980666143559;  // v, image center ordinate (px)
 /*
         // PICTURES N°3
         cameraParameters[0] = 3232.528030290006;   // alphaX, focal (px)
@@ -95,12 +96,12 @@ void OpenGLWidget::resetCameraSettings()
         cameraParameters[4] = 539.50000;   // v, image center ordinate (px)*/
 
 
-    // PATIENT 2
-        cameraParameters[0] = 945.26018;  // alphaX, focal (px)
+        // PATIENT 2
+       /* cameraParameters[0] = 945.26018;  // alphaX, focal (px)
         cameraParameters[1] = 945.26018;  // alphaY, focal (px)
         cameraParameters[2] = 0;  // skewness
         cameraParameters[3] = 639.5;  // u, image center abscissa (px)
-        cameraParameters[4] = 359.5;  // v, image center ordinate (px)
+        cameraParameters[4] = 359.5;  // v, image center ordinate (px)*/
 
         cameraParameters[5] = 0.001;       // near, distance to the nearer depth clipping plane (m)
         cameraParameters[6] = 1000;        // far, distance to the farther depth clipping plane (m)
@@ -177,71 +178,33 @@ void OpenGLWidget::paintGL()
     glPushMatrix();
         glColor3f(1.f, 1.f, 1.f);
 
-        if(referenceModel >= 0)
-        {
-            glTranslatef(reference.position.x(), reference.position.y(), reference.position.z());
-
-            QMatrix4x4 m;
-            m.rotate(reference.rotation);
-            multMatrix(m);
-
-            glTranslatef(-reference.position.x(), -reference.position.y(), -reference.position.z());
-        }
-
         glTranslatef(distanceCoordinates1.x(), distanceCoordinates1.y(), distanceCoordinates1.z());
+
+        QMatrix4x4 m;
+        m.rotate(tagsRotation);
+        multMatrix(m);
+
         glCallList(tags);
     glPopMatrix();
 
-
-
-// TUMOR
-    glPushMatrix();
-        glColor3f(0.f, 0.f, 1.f);
-
-        if(referenceModel >= 0)
-        {
-            glTranslatef(reference.position.x(), reference.position.y(), reference.position.z());
-
-            QMatrix4x4 m;
-            m.rotate(reference.rotation);
-            multMatrix(m);
-
-            glTranslatef(-reference.position.x(), -reference.position.y(), -reference.position.z());
-        }
-
-        glTranslatef(coordTumor.x(),coordTumor.y(),coordTumor.z());
-        glCallList(tumor);
-    glPopMatrix();
 
 
 // MODELS
     for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
     {
         Model currentModel = model.getModelSettings(modelNumber);
+
         glColor4f(currentModel.color.x(), currentModel.color.y(), currentModel.color.z(), currentModel.color.w());
 
         glPushMatrix();
-            if(referenceModel >= 0 && (GLint)modelNumber != referenceModel)
-            {
-                glTranslatef(reference.position.x(), reference.position.y(), reference.position.z());
+            glTranslatef(currentModel.position.x(), currentModel.position.y(), currentModel.position.z());
 
-                QMatrix4x4 m;
-                m.rotate(currentModel.rotation);
-                multMatrix(m);
+            QMatrix4x4 m;
+            m.rotate(currentModel.rotation);
+            multMatrix(m);
 
-                glTranslatef(-reference.position.x(), -reference.position.y(), -reference.position.z());
-
-                glTranslatef(currentModel.position.x(), currentModel.position.y(), currentModel.position.z());
-            }
-            else
-            {
-                glTranslatef(currentModel.position.x(), currentModel.position.y(), currentModel.position.z());
-
-                QMatrix4x4 m;
-                m.rotate(currentModel.rotation);
-                multMatrix(m);
-            }
-
+            if(currentModel.tumorRadius > 0)
+                glScalef(currentModel.tumorRadius/0.33, currentModel.tumorRadius/0.33, currentModel.tumorRadius/0.33);
 
             if(currentModel.texture[0] > 0)
             {
@@ -287,20 +250,17 @@ void OpenGLWidget::paintGL()
         renderText(10, 25, QString("X: %1    Y: %2    Z: %3 cm")
                 .arg(QString::number(surfaceCoordinates.x()/10, 'f', 2))
                 .arg(QString::number(surfaceCoordinates.y()/10, 'f', 2))
-                .arg(QString::number(surfaceCoordinates.z()/10, 'f', 2)), font);
+                .arg(QString::number(-surfaceCoordinates.z()/10, 'f', 2)), font);
 
-        if(tumor)
+        for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
         {
-            QVector3D temp = coordTumor;
+            Model currentModel = model.getModelSettings(modelNumber);
 
-            if(modelsList.size())
-                temp += model.getModelSettings(0).position;
-
-            GLfloat distanceToTumor = sqrt(pow(surfaceCoordinates.x()-temp.x(),2)
-                    +pow(surfaceCoordinates.y()-temp.y(),2)
-                    +pow(surfaceCoordinates.z()+temp.z(),2));
-
-            renderText(10, height()-10, QString("Distance to tumor: %1 cm").arg(QString::number(abs((distanceToTumor/10)-(tumorRadius/scaleFactor/10)), 'f', 2)), font);
+            if(currentModel.tumorRadius > 0)
+            {
+                qreal distanceToTumor = surfaceCoordinates.distanceToPoint(currentModel.position)/10;
+                renderText(10, height()-10, QString("Distance to tumor center: %1 cm").arg(QString::number(distanceToTumor, 'f', 1)), font);
+            }
         }
         crosshair = 0;
     }
@@ -348,6 +308,7 @@ void OpenGLWidget::resizeWidget()
 }
 void OpenGLWidget::setTexturePath()
 {
+    emit frameByFrameModeOFF(frameByFrameMode);
     releaseVideoCapture();
 
     QString texturePath = QFileDialog::getOpenFileName(this, "Open Image File", "./", "Images (*.png *.xpm *.jpg *.bmp)");
@@ -358,8 +319,10 @@ void OpenGLWidget::setTexturePath()
     updateGL();
 }
 
-void OpenGLWidget::setVideoPath()
+bool OpenGLWidget::setVideoPath(bool frameByFrame)
 {
+    if(!frameByFrame)
+        emit frameByFrameModeOFF(false);
     releaseVideoCapture();
 
     QString videoPath = QFileDialog::getOpenFileName(this, "Open Video File", "./", "Videos (*.avi *.mpg *.mpeg...)");
@@ -382,17 +345,24 @@ void OpenGLWidget::setVideoPath()
             connect(this, SIGNAL(captureReleased()), timer, SLOT(stop()));
 
             GLfloat fps = cap.get(CAP_PROP_FPS);
-            timer->start(1000/fps);
+
+            if(fps <= 0)
+                return false;
+            else
+                timer->start(1000/fps);
         }
+        return true;
     }
+    else
+        return false;
 }
 void OpenGLWidget::updateVideo()
 {
-    if(frameByFrameMode)
-        emit takeScreenShot(framesFolder);
-
     Mat frame;
-    cap >> frame;                                       // Get a new frame from camera
+    cap >> frame;       // Get a new frame from camera
+
+    if(frameByFrameMode)
+        frameByFrameScreenshot(frame);
 
     if(!frame.empty())
     {
@@ -411,23 +381,43 @@ void OpenGLWidget::setFrameByFrameMode(bool buttonChecked)
 {
     frameByFrameMode = buttonChecked;
     if(frameByFrameMode)
-        setVideoPath();
+    {
+        if(setVideoPath(true))
+            framesFolder = QFileDialog::getExistingDirectory(this, "Select a folder to save the frames",
+                                 "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+        else
+        {
+            frameByFrameMode = false;
+            emit frameByFrameModeOFF(frameByFrameMode);
+        }
+    }
+}
+void OpenGLWidget::frameByFrameScreenshot(Mat frame)
+{
+    emit takeScreenShot(framesFolder);
+    backgroundTexture.saveTexture(frame, framesFolder);
 
-    framesFolder = QFileDialog::getExistingDirectory(this, "Select a folder to save the frames", "/home",
-                                                 QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    QVector<GLuint> vectorModels;
+    for(GLuint i = 1; i > (GLuint)modelsList.size(); i++)
+        vectorModels.push_back(i);
+
+    if(!selectedModel.isEmpty())
+        model.saveModel(QStringList(QString("model%1").arg(screenshotNumber)), vectorModels, true);
+
+    screenshotNumber++;
 }
 
 
-
 /* ============================ MODEL LOADER/SAVER/TRANSFORM ============================ */
-void OpenGLWidget::addModel()
+void OpenGLWidget::addModel(QString modelName)
 {
-    QString modelName;
     QStringList modelsListInit = modelsList;
 
     do
     {
-        modelName = QFileDialog::getOpenFileName(this, tr("Open Model File"), "./", tr("Modèles 3D (*.obj)"));
+        if(modelName.isEmpty())
+            modelName = QFileDialog::getOpenFileName(this, tr("Open Model File"), "./", tr("Modèles 3D (*.obj)"));
+
         if(!modelName.isEmpty() && !modelsListInit.contains(modelName))
         {
             modelsList << modelName;
@@ -449,21 +439,24 @@ void OpenGLWidget::removeModels()
         modelsList.removeAt(modelNumber);
         model.removeModel(modelNumber);
 
+        setReferenceModel(QString(""));
         emit modelsChanged();
         updateGL();
     }
     else
     {
-        for(GLuint i = (GLuint)checkedModels.size()-1; i <= 0; i--)
+        for(GLint i = checkedModels.size()-1; i >= 0; i--)
         {
             modelsList.removeAt(checkedModels.at(i));
             model.removeModel(checkedModels.at(i));
 
+            setReferenceModel(QString(""));
             emit modelsChanged();
             updateGL();
         }
-        referenceModel = -1;
     }
+
+
 }
 void OpenGLWidget::saveModels()      // Saves the models with their transformations
 {
@@ -527,7 +520,6 @@ void OpenGLWidget::saveModels()      // Saves the models with their transformati
                 model.saveModel(newModelsNames, checkedModels, true);
             }
         }
-
         else
         {
             QStringList newModelsNames;
@@ -625,10 +617,8 @@ void OpenGLWidget::centerModels()    // Puts the center of the selected models o
             Model currentModel = model.getModelSettings(modelNumber);
 
             currentModel.position.setZ(-0.3/scaleFactor);
-
             currentModel.position.setY(((GLfloat)height()/2-(cameraParameters[4]+backgroundTexture.getHeight()*frame_picture_Ratio)*cameraParameters[7])*(-currentModel.position.z())/(cameraParameters[1]*cameraParameters[7]));
             currentModel.position.setX(((GLfloat)width()/2-currentModel.position.y()*cameraParameters[2]*cameraParameters[7]/(-currentModel.position.z())-(cameraParameters[3]+backgroundTexture.getWidth()*frame_picture_Ratio)*cameraParameters[7])*(-currentModel.position.z())/(cameraParameters[0]*cameraParameters[7]));
-
             currentModel.rotation = QQuaternion();
 
             model.setModelSettings(currentModel, modelNumber);
@@ -636,14 +626,15 @@ void OpenGLWidget::centerModels()    // Puts the center of the selected models o
     updateGL();
 }
 
-
 void OpenGLWidget::rotateX()         // Rotates the model at 360° around X axis
 {
-    QVector<QQuaternion> memory;
+    QVector<QQuaternion> memoryRot;
+    QVector<QVector3D> memoryPos;
     for(GLuint i = 0; i < (GLuint)checkedModels.size(); i++)
     {
         Model currentModel = model.getModelSettings(checkedModels.at(i));
-        memory.push_back(currentModel.rotation);
+        memoryRot.push_back(currentModel.rotation);
+        memoryPos.push_back(currentModel.position);
     }
 
     QVector<QVector3D> orthonormals;
@@ -653,29 +644,68 @@ void OpenGLWidget::rotateX()         // Rotates the model at 360° around X axis
         QMatrix4x4 m;
         m.rotate(currentModel.rotation);
         orthonormals.push_back(m.transposed() * QVector3D(1,0,0));
-        model.setModelSettings(currentModel, checkedModels.at(i));
     }
+
+    const QQuaternion tagsRotationInit = tagsRotation;
+    const QVector3D distanceCoordInit = distanceCoordinates1;
+
 
     QTime time;
     time.start();
 
-    while(time.elapsed() < 360.f*rotationSpeed)
+
+    while(time.elapsed()*rotationSpeed/1000 < 360.f)
     {
         for(GLuint i = 0; i < (GLuint)checkedModels.size(); i++)
         {
             Model currentModel = model.getModelSettings(checkedModels.at(i));
-            currentModel.rotation = memory.at(i) * QQuaternion::fromAxisAndAngle(orthonormals.at(i),-time.elapsed()/rotationSpeed);
+
+            if(referenceModel >= 0 && (GLint)i != referenceModel)
+            {
+                Model ref = model.getModelSettings(referenceModel);
+
+                QMatrix4x4 temp;
+                temp.translate(memoryPos.at(referenceModel)-memoryPos.at(i));
+                temp.rotate(ref.rotation);
+                temp.translate(-memoryPos.at(referenceModel)+memoryPos.at(i));
+
+                QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
+
+                currentModel.position = memoryPos.at(i) + translation;
+                currentModel.rotation = memoryRot.at(i) * QQuaternion::fromAxisAndAngle(orthonormals.at(referenceModel), -time.elapsed()*rotationSpeed/1000);
+            }
+            else
+                currentModel.rotation = memoryRot.at(i) * QQuaternion::fromAxisAndAngle(orthonormals.at(i), -time.elapsed()*rotationSpeed/1000);
+
             model.setModelSettings(currentModel, checkedModels.at(i));
+
+            if(!distanceCoordinates1.isNull() && (GLint)checkedModels.at(i) == referenceModel)
+            {
+                QMatrix4x4 temp;
+                temp.translate(currentModel.position-distanceCoordInit);
+                temp.rotate(currentModel.rotation);
+                temp.translate(-currentModel.position+distanceCoordInit);
+
+                QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
+
+                distanceCoordinates1 = distanceCoordInit + translation;
+                tagsRotation = tagsRotationInit * QQuaternion::fromAxisAndAngle(orthonormals.at(i), -time.elapsed()*rotationSpeed/1000);
+            }
         }
+
         updateGL();
     }
 
     for(GLuint i = 0; i < (GLuint)checkedModels.size(); i++)
     {
         Model currentModel = model.getModelSettings(checkedModels.at(i));
-        currentModel.rotation = memory.at(i);
+        currentModel.rotation = memoryRot.at(i);
+        currentModel.position = memoryPos.at(i);
         model.setModelSettings(currentModel, checkedModels.at(i));
     }
+
+    distanceCoordinates1 = distanceCoordInit;
+    tagsRotation = tagsRotationInit;
     updateGL();
 }
 void OpenGLWidget::rotateY()         // Rotates the model at 360° around Y axis
@@ -700,12 +730,12 @@ void OpenGLWidget::rotateY()         // Rotates the model at 360° around Y axis
     QTime time;
     time.start();
 
-    while(time.elapsed() < 360.f*rotationSpeed)
+    while(time.elapsed()*rotationSpeed/1000 < 360.f)
     {
         for(GLuint i = 0; i < (GLuint)checkedModels.size(); i++)
         {
             Model currentModel = model.getModelSettings(checkedModels.at(i));
-            currentModel.rotation = memory.at(i) * QQuaternion::fromAxisAndAngle(orthonormals.at(i),-time.elapsed()/rotationSpeed);
+            currentModel.rotation = QQuaternion::fromAxisAndAngle(orthonormals.at(i),-time.elapsed()*rotationSpeed/1000) * memory.at(i);
             model.setModelSettings(currentModel, checkedModels.at(i));
         }
         updateGL();
@@ -723,30 +753,25 @@ void OpenGLWidget::rotateY()         // Rotates the model at 360° around Y axis
 
 
 /* ============================ OTHER MODELS ============================ */
-void OpenGLWidget::createTumor(bool buttonChecked)
+void OpenGLWidget::createTumor()
 {
-    tumorMode = buttonChecked;
+    addModel(QString("./img/tumor.obj"));
 
-    if(tumorMode)
+    Model tumor = model.getModelSettings(modelsList.size()-1);
+
+    tumor.tumorRadius = defaultTumorRadius;
+    tumor.color = QVector4D(0,0,1,1);
+    if(referenceModel >= 0)
+        tumor.position = model.getModelSettings(referenceModel).position;
+    else
     {
-        distanceMode = false;
-        emit distanceModeIsON(false);
-
-        tumor = glGenLists(1);
-        GLUquadric* params = gluNewQuadric();
-        gluQuadricDrawStyle(params, GLU_FILL);
-
-        glNewList(tumor, GL_COMPILE);
-            gluSphere(params, tumorRadius/scaleFactor, 20, 20);
-        glEndList();
-
-        if(referenceModel >= 0)
-            coordTumor = model.getModelSettings(referenceModel).position;
-        else
-            coordTumor = QVector3D(0,0,-0.3/scaleFactor);
-
-        updateGL();
+        tumor.position.setZ(-tumorDepth/scaleFactor);
+        tumor.position.setY(((GLfloat)height()/2-(cameraParameters[4]+backgroundTexture.getHeight()*frame_picture_Ratio)*cameraParameters[7])*(-tumor.position.z())/(cameraParameters[1]*cameraParameters[7]));
+        tumor.position.setX(((GLfloat)width()/2-tumor.position.y()*cameraParameters[2]*cameraParameters[7]/(-tumor.position.z())-(cameraParameters[3]+backgroundTexture.getWidth()*frame_picture_Ratio)*cameraParameters[7])*(-tumor.position.z())/(cameraParameters[0]*cameraParameters[7]));
     }
+
+    model.setModelSettings(tumor, modelsList.size()-1);
+    updateGL();
 }
 void OpenGLWidget::createCrosshair(QPointF screenCoordinates)
 {
@@ -772,31 +797,24 @@ void OpenGLWidget::createCrosshair(QPointF screenCoordinates)
 void OpenGLWidget::setDistanceMode(bool buttonChecked)
 {
     distanceMode = buttonChecked;
-
-    if(distanceMode)
-    {
-        tumorMode = false;
-        emit tumorModeIsON(false);
-    }
 }
 void OpenGLWidget::createTags(QPointF screenCoordinates)
 {
-    if(!tags)
-        distanceCoordinates1 = QVector3D(0,0,0);
+    if(!distanceCoordinates2.isNull())
+    {
+        distanceCoordinates1 = distanceCoordinates2 = QVector3D();
+        tagsRotation = QQuaternion();
+    }
 
     tags = glGenLists(1);
     GLUquadric* params = gluNewQuadric();
     gluQuadricDrawStyle(params, GLU_FILL);
 
-    QMatrix4x4 m;
-    if(referenceModel >= 0)
-        m.rotate(model.getModelSettings(referenceModel).rotation);
 
     if(distanceCoordinates1.isNull())   // First tag
     {
         distanceBetweenTags = 0;
         distanceCoordinates1 = screenToModelPixel(screenCoordinates);
-        distanceCoordinates1 = m.transposed() * QVector3D(distanceCoordinates1.x(), distanceCoordinates1.y(), -distanceCoordinates1.z());
 
         glNewList(tags, GL_COMPILE);
             gluSphere(params, tagsRadius/scaleFactor, 20, 20);
@@ -805,8 +823,7 @@ void OpenGLWidget::createTags(QPointF screenCoordinates)
     else    // First and second tags
     {
         GLfloat radius = tagsRadius/scaleFactor;
-        QVector3D distanceCoordinates2 = screenToModelPixel(screenCoordinates);
-        distanceCoordinates2 = m.transposed() * QVector3D(distanceCoordinates2.x(), distanceCoordinates2.y(), -distanceCoordinates2.z());
+        distanceCoordinates2 = screenToModelPixel(screenCoordinates);
 
         glNewList(tags, GL_COMPILE);
             gluSphere(params, radius, 20, 20);
@@ -842,9 +859,41 @@ void OpenGLWidget::mouseMoveEvent(QMouseEvent *e)
             if(checkedModels.contains(modelNumber))
             {
                 Model currentModel = model.getModelSettings(modelNumber);
+
+                if(referenceModel >= 0 && referenceModel != (GLint)modelNumber)
+                {
+                    Model ref = model.getModelSettings(referenceModel);
+
+                    QMatrix4x4 temp;
+                    temp.translate(ref.position-currentModel.position);
+                    temp.rotate(trackball.rotation());
+                    temp.translate(-ref.position+currentModel.position);
+
+                    QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
+
+
+                    currentModel.position += translation;
+                }
+
                 currentModel.rotation = trackball.rotation() * currentModel.rotation;
                 model.setModelSettings(currentModel, modelNumber);
             }
+
+        if(!distanceCoordinates1.isNull() && referenceModel >= 0)
+        {
+            Model ref = model.getModelSettings(referenceModel);
+
+            QMatrix4x4 temp;
+            temp.translate(ref.position-distanceCoordinates1);
+            temp.rotate(trackball.rotation());
+            temp.translate(-ref.position+distanceCoordinates1);
+
+            QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
+
+            distanceCoordinates1 += translation;
+            if(!distanceCoordinates2.isNull())
+                tagsRotation = trackball.rotation() * tagsRotation;
+        }
 
         updateGL();
     }
@@ -873,39 +922,29 @@ void OpenGLWidget::mouseReleaseEvent(QMouseEvent*)
 
 void OpenGLWidget::wheelEvent(QWheelEvent *e)
 {
-    GLfloat move;
-
+    GLfloat move = -(GLfloat)e->delta()/120/scaleFactor;
     if(e->modifiers().testFlag(Qt::ControlModifier))
-        move = sensibilityPlus;
+        move *= sensibilityPlus;
     else
-        move = sensibility;
+        move *= sensibility;
 
-    QVector3D movement = QVector3D(0,0,-(GLfloat)e->delta()/120*move/scaleFactor);
-
-    if(tumorMode)
-    {
-        if(e->modifiers().testFlag(Qt::AltModifier))
+    if(e->modifiers().testFlag(Qt::AltModifier))
+        for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
         {
-            tumorRadius += movement.z()/10000;
-
-            QVector3D const tempCoordTumor = coordTumor;
-            createTumor(true);
-            coordTumor = tempCoordTumor;
-        }
-
-        else
-        {
-            if(referenceModel >= 0)
+            Model currentModel = model.getModelSettings(modelNumber);
+            if(currentModel.tumorRadius > 0)
             {
-                QMatrix4x4 m;
-                m.rotate(model.getModelSettings(referenceModel).rotation);
-                movement = m.transposed() * movement;
+                currentModel.tumorRadius += move*scaleFactor;
+                if(currentModel.tumorRadius <= 0)
+                    currentModel.tumorRadius = 0.001;
+                model.setModelSettings(currentModel, modelNumber);
             }
-
-            coordTumor = coordTumor + movement;
         }
-    }
+
     else
+    {
+        QVector3D movement = QVector3D(0,0,move);
+
         if(checkedModels.contains(referenceModel))
             for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
             {
@@ -919,20 +958,14 @@ void OpenGLWidget::wheelEvent(QWheelEvent *e)
                 {
                     QVector3D tempMovement = movement;
 
-                    if(referenceModel >= 0 && referenceModel != (GLint)modelNumber)
-                    {
-                        QMatrix4x4 r;
-                        r.rotate(model.getModelSettings(modelNumber).rotation);
-                        tempMovement = r.transposed() * movement;
-                    }
-
                     Model currentModel = model.getModelSettings(modelNumber);
                     currentModel.position += tempMovement;
                     model.setModelSettings(currentModel, modelNumber);
                 }
 
-        if(referenceModel >= 0 && checkedModels.contains(referenceModel))
-            coordTumor = coordTumor + movement;
+        if(!distanceCoordinates1.isNull() && checkedModels.contains(referenceModel))
+            distanceCoordinates1 += movement;
+    }
 
     updateGL();
 }
@@ -962,9 +995,7 @@ void OpenGLWidget::keyPressEvent(QKeyEvent *e)
             break;
         case Qt::Key_Enter:
         case Qt::Key_Return:
-            if(tumorMode)
-                emit tumorModeIsON(false);
-            else if(frameByFrameMode)
+            if(frameByFrameMode)
                 updateVideo();
             break;
         case Qt::Key_N:
@@ -976,18 +1007,13 @@ void OpenGLWidget::keyPressEvent(QKeyEvent *e)
             }
             break;
         case Qt::Key_Escape:
-            if(tumorMode)
-            {
-                tumorMode=false;
-                emit tumorModeIsON(false);
-                tumor = 0;
-                coordTumor = QVector3D(0,0,0);
-            }
-            else if(distanceMode)
+            if(distanceMode)
             {
                 distanceMode=false;
                 tags = 0;
                 distanceBetweenTags = 0;
+                distanceCoordinates1 = distanceCoordinates2 = QVector3D();
+                tagsRotation = QQuaternion();
                 emit distanceModeIsON(false);
             }
             else
@@ -997,52 +1023,26 @@ void OpenGLWidget::keyPressEvent(QKeyEvent *e)
             break;
     }
 
-    if(tumorMode)
-    {
-        if(referenceModel >= 0)
+    if(checkedModels.contains(referenceModel))
+        for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
         {
-            QMatrix4x4 m;
-            m.rotate(model.getModelSettings(referenceModel).rotation);
-            m = m.transposed();
-
-            movement = m * movement;
+            Model currentModel = model.getModelSettings(modelNumber);
+            currentModel.position += movement;
+            model.setModelSettings(currentModel, modelNumber);
         }
-
-        coordTumor = coordTumor + movement;
-    }
     else
-    {
-        if(checkedModels.contains(referenceModel))
-            for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
+        for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
+            if(checkedModels.contains(modelNumber))
             {
+                QVector3D tempMovement = movement;
+
                 Model currentModel = model.getModelSettings(modelNumber);
-                currentModel.position += movement;
+                currentModel.position += tempMovement;
                 model.setModelSettings(currentModel, modelNumber);
             }
-        else
-            for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
-                if(checkedModels.contains(modelNumber))
-                {
-                    QVector3D tempMovement = movement;
 
-                    if(referenceModel >= 0 && referenceModel != (GLint)modelNumber)
-                    {
-                        QMatrix4x4 r;
-                        r.rotate(model.getModelSettings(modelNumber).rotation);
-                        tempMovement = r.transposed() * movement;
-                    }
-
-                    Model currentModel = model.getModelSettings(modelNumber);
-                    currentModel.position += tempMovement;
-                    model.setModelSettings(currentModel, modelNumber);
-                }
-
-        if(referenceModel >= 0 && checkedModels.contains(referenceModel))
-        {
-            coordTumor += movement;
-            distanceCoordinates1 += movement;
-        }
-    }
+    if(!distanceCoordinates1.isNull() && checkedModels.contains(referenceModel))
+        distanceCoordinates1 += movement;
 
     updateGL();
 }
@@ -1078,11 +1078,7 @@ QVector3D OpenGLWidget::screenToModelPixel(const QPointF screenCoordinates) // S
     gluUnProject((float)screenCoordinates.x(), (float)(viewport[3]-screenCoordinates.y()), winZ, modelview, projection, viewport, &posX, &posY, &posZ);
 
     QVector3D pos(posX, posY, posZ);
-    QMatrix4x4 r;
-    r.rotate(trackball.rotation());
-    pos = r * pos;
-
-    return QVector3D(pos.x(),pos.y(),-pos.z());
+    return QVector3D(pos.x(),pos.y(),pos.z());
 }
 
 
@@ -1111,6 +1107,14 @@ GLfloat OpenGLWidget::getRotationSpeed()
 GLfloat OpenGLWidget::getTagsRadius()
 {
     return tagsRadius;
+}
+GLfloat OpenGLWidget::getTumorRadius()
+{
+    return defaultTumorRadius;
+}
+GLfloat OpenGLWidget::getTumorDepth()
+{
+    return tumorDepth;
 }
 QStringList OpenGLWidget::getModelsList()
 {
@@ -1163,6 +1167,14 @@ void OpenGLWidget::scaleSliderState(bool newState)
 void OpenGLWidget::setTagsRadius(GLfloat newValue)
 {
     tagsRadius = newValue;
+}
+void OpenGLWidget::setTumorRadius(GLfloat newValue)
+{
+    defaultTumorRadius = newValue;
+}
+void OpenGLWidget::setTumorDepth(GLfloat newValue)
+{
+    tumorDepth = newValue;
 }
 
 void OpenGLWidget::setCheckedModels(QVector<GLuint> newCheckedModels)

@@ -1,5 +1,5 @@
 #include "modelsListWidget.h"
-#include <QDebug>
+
 
 ModelsListWidget::ModelsListWidget(QWidget *parent) : QListWidget(parent)
 {
@@ -11,7 +11,7 @@ ModelsListWidget::ModelsListWidget(QWidget *parent) : QListWidget(parent)
     QAction *removeModelButton = new QAction("&Remove Model", this);
     QAction *changeColorButton = new QAction("&Change Color", this);
     QAction *addTextureButton = new QAction("Add &Texture", this);
-    referenceModelButton = new QAction("Reference &Model", this);
+    referenceModelButton = new QAction("Reference &Frame", this);
 
     this->addAction(addModelButton);
     this->addAction(saveModelButton);
@@ -26,6 +26,7 @@ ModelsListWidget::ModelsListWidget(QWidget *parent) : QListWidget(parent)
 
     /* ============================ CONNECTIONS ============================ */
 
+    connect(this, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(changeCheckState(QListWidgetItem*)));
     connect(this, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(updateCheckedModels()));
 
     connect(addModelButton, SIGNAL(triggered()), this, SLOT(emitAddModel()));
@@ -65,10 +66,13 @@ void ModelsListWidget::mousePressEvent(QMouseEvent *event)
 /* ============================ UPDATE ============================ */
 void ModelsListWidget::updateModelsList(QStringList items)
 {
+    GLuint initialSize = this->count();
     this->clear();
 
     pathsList = items;
 
+    if(initialSize < (GLuint)items.size())
+        checked.push_back(items.size()-1);
 
     for(GLuint i = 0; i < (GLuint)items.size(); i++)
     {
@@ -84,6 +88,7 @@ void ModelsListWidget::updateModelsList(QStringList items)
         this->addItem(currentItem);
     }
 
+    changeItemsFont();
     updateCheckedModels();
 }
 void ModelsListWidget::updateCheckedModels()
@@ -114,14 +119,18 @@ void ModelsListWidget::emitChangeColor()
         QColorDialog *colorWindow = new QColorDialog(this);
         colorWindow->setWindowTitle("Models Color");
 
-        QColor newColor = colorWindow->getColor(Qt::white,this, QString("Models Color"));
-
-        emit selectedModelChanged(selectedItem);
-        emit changeColor(newColor);
+        connect(colorWindow, SIGNAL(colorSelected(QColor)), this, SLOT(changeColor(QColor)));
+        colorWindow->exec();
     }
+}
+void ModelsListWidget::changeColor(QColor newColor)
+{
+    emit selectedModelChanged(selectedItem);
+    emit modelColor(newColor);
 }
 void ModelsListWidget::emitRemoveModels()
 {
+    referenceModel = -1;
     emit updateCheckedModels(checked);
 
     emit selectedModelChanged(selectedItem);
@@ -162,4 +171,12 @@ void ModelsListWidget::changeItemsFont()
     }
 
     emit referenceModelChanged(referenceModel);
+}
+
+void ModelsListWidget::changeCheckState(QListWidgetItem* item)
+{
+    if(item->checkState() == Qt::Checked)
+        item->setCheckState(Qt::Unchecked);
+    else
+        item->setCheckState(Qt::Checked);
 }

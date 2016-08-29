@@ -25,6 +25,8 @@ public:
     GLfloat getSensibility(), getSensibilityPlus();
     GLfloat getRotationSpeed();
     GLfloat getTagsRadius();
+    GLfloat getTumorRadius();
+    GLfloat getTumorDepth();
     QStringList getModelsList();
 
   // SETTERS
@@ -34,7 +36,11 @@ public:
     void setRotationSpeed(GLfloat newValue);
     void scaleSliderState(bool newState);
     void setTagsRadius(GLfloat newValue);
+    void setTumorRadius(GLfloat newValue);
+    void setTumorDepth(GLfloat newValue);
     void setFrameByFrameMode(bool buttonChecked);
+
+    void addModel(QString modelName);
 
 
 private:
@@ -45,6 +51,7 @@ private:
     VideoCapture cap;
     bool frameByFrameMode;
     QString framesFolder;
+    GLuint screenshotNumber;
 
     QVector<GLuint> checkedModels;
     QString selectedModel;
@@ -54,8 +61,8 @@ private:
     GLfloat scaleFactor;
     GLfloat sensibility, sensibilityPlus;
     GLfloat rotationSpeed;
-    QVector3D coordTumor;                   // Tumor translations
-    QVector3D surfaceCoordinates, distanceCoordinates1; // Coordinates displayed when model clicked
+    QVector3D surfaceCoordinates, distanceCoordinates1, distanceCoordinates2; // Coordinates displayed when model clicked
+    QQuaternion tagsRotation;
     GLfloat distanceBetweenTags;
     qreal cameraParameters[8];
 /*
@@ -69,9 +76,9 @@ private:
  *  cameraParameters[7] = scale of the perspective view
  */
 
-    bool scaleSliderPressed, tumorMode, distanceMode;
-    GLuint tumor, picture, crosshair, tags; //DisplayLists
-    GLfloat tumorRadius, tagsRadius;        // Radius of the tumor, tags (m)
+    bool scaleSliderPressed, distanceMode;
+    GLuint picture, crosshair, tags; //DisplayLists
+    GLfloat defaultTumorRadius, tumorDepth, tagsRadius; // Radius of the tumor, tags and depth of the tumor (m)
     QStringList modelsList;                 // List of loaded models
 
     void initializeGL();
@@ -80,6 +87,7 @@ private:
 
     void updateModelsList();
     void releaseVideoCapture();
+    void frameByFrameScreenshot(Mat frame);
 
     void resizeWidget();
     void createCrosshair(QPointF screenCoordinates);
@@ -98,20 +106,19 @@ private:
 
 signals:
     void pictureChanged(GLuint newWidth, GLuint newHeight);
-    void tumorModeIsON(bool tumorModeON);
     void distanceModeIsON(bool distanceModeON);
     void modelsChanged();
     void captureReleased();
     void takeScreenShot(QString path);
+    void frameByFrameModeOFF(bool frameByFrameMode);
 
 
 public slots:
   // BUTTONS
     void setTexturePath();
-    void setVideoPath();
+    bool setVideoPath(bool frameByframe);
     void updateVideo();
 
-    void addModel();
     void removeModels();
     void saveModels();
     void changeColor(QColor newColor);
@@ -122,7 +129,7 @@ public slots:
     void setSelectedModel(QString newSelectedModel);
     void setReferenceModel(QString newReferenceModel);
 
-    void createTumor(bool buttonChecked);
+    void createTumor();
     void centerModels();
     void setDistanceMode(bool buttonChecked);
     void rotateX();

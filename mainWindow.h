@@ -30,7 +30,7 @@ private:
 
    // Left Toolbar
     QToolBar *leftToolBar;
-    QAction *actionTumor, *distance, *frameByFrame;
+    QAction *distance, *frameByFrame;
 
 
    // Right toolbar
@@ -42,18 +42,19 @@ private:
 
 
    // Settings
-    QLineEdit *framePictureRatioLineEdit, *rotationSpeedLineEdit, *tagsRadiusLineEdit;
+    QLineEdit *framePictureRatioLineEdit, *rotationSpeedLineEdit, *tagsRadiusLineEdit, *tumorRadiusLineEdit, *tumorDepthLineEdit;
     QLineEdit *alphaX, *alphaY, *skewness, *centerX, *centerY, *near, *far;
     QLineEdit *sensibilityLineEdit, *sensibilityPlusLineEdit;
 
 
 private slots :
     void resizeMainWindow(GLuint newWidth, GLuint newHeight);
-    void createTumor();
     void distanceMode();
+    void setVideoPath();
     void frameByFrameMode();
     void screenshot();
     void screenshot(QString path);
+    void addModel();
 
 
    // Settings

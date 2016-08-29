@@ -51,9 +51,8 @@ MainWindow::MainWindow()
     leftToolBar->addAction(actionSaveModel);
     leftToolBar->addSeparator();
 
-    // ADD/MOVE TUMOR
-    actionTumor = new QAction(QIcon("./img/tumor.png"), "Add/Move &Tumor", this);
-    actionTumor->setCheckable(true);
+    // ADD TUMOR
+    QAction *actionTumor = new QAction(QIcon("./img/tumor.png"), "Add &Tumor", this);
     leftToolBar->addAction(actionTumor);
     leftToolBar->addSeparator();
 
@@ -162,6 +161,12 @@ MainWindow::MainWindow()
 
 
     // MODELS LIST
+      // MODELS LIST TITLE
+        QLabel *modelsListTitle = new QLabel("Models List");
+        modelsListTitle->setAlignment(Qt::AlignCenter);
+        rightToolBar->addWidget(modelsListTitle);
+
+      // MODELS LIST
         list = new ModelsListWidget;
         list->setFixedWidth(170);
         rightToolBar->addWidget(list);
@@ -179,15 +184,14 @@ MainWindow::MainWindow()
 
 // LEFT TOOLBAR BUTTONS
     connect(actionLoadImage, SIGNAL(triggered()), object, SLOT(setTexturePath()));
-    connect(actionLoadVideo, SIGNAL(triggered()), object, SLOT(setVideoPath()));
-    connect(actionLoadModel, SIGNAL(triggered()), object, SLOT(addModel()));
+    connect(actionLoadVideo, SIGNAL(triggered()), this, SLOT(setVideoPath()));
+    connect(actionLoadModel, SIGNAL(triggered()), this, SLOT(addModel()));
     connect(actionLoadTexture, SIGNAL(triggered()), object, SLOT(addTexture()));
     connect(actionChangeColor, SIGNAL(triggered()), list, SLOT(emitChangeColor()));
 
     connect(actionSaveModel, SIGNAL(triggered()), object, SLOT(saveModels()));
 
-    connect(actionTumor, SIGNAL(changed()), this, SLOT(createTumor()));
-    connect(object, SIGNAL(tumorModeIsON(bool)), actionTumor, SLOT(setChecked(bool)));
+    connect(actionTumor, SIGNAL(triggered()), object, SLOT(createTumor()));
 
     connect(actionCenterModel, SIGNAL(triggered()), object, SLOT(centerModels()));
 
@@ -200,6 +204,7 @@ MainWindow::MainWindow()
     connect(actionScreenshot, SIGNAL(triggered()), this, SLOT(screenshot()));
 
     connect(frameByFrame, SIGNAL(changed()), this, SLOT(frameByFrameMode()));
+    connect(object, SIGNAL(frameByFrameModeOFF(bool)), frameByFrame, SLOT(setChecked(bool)));
     connect(object, SIGNAL(takeScreenShot(QString)), this, SLOT(screenshot(QString)));
 
     connect(settings, SIGNAL(triggered()), this, SLOT(settingsWindow()));
@@ -223,10 +228,10 @@ MainWindow::MainWindow()
 
     connect(list, SIGNAL(selectedModelChanged(QString)), object, SLOT(setSelectedModel(QString)));
     connect(list, SIGNAL(referenceModelChanged(QString)), object, SLOT(setReferenceModel(QString)));
-    connect(list, SIGNAL(addModel()), object, SLOT(addModel()));
+    connect(list, SIGNAL(addModel()), this, SLOT(addModel()));
     connect(list, SIGNAL(saveModels()), object, SLOT(saveModels()));
     connect(list, SIGNAL(removeModels()), object, SLOT(removeModels()));
-    connect(list, SIGNAL(changeColor(QColor)), object, SLOT(changeColor(QColor)));
+    connect(list, SIGNAL(modelColor(QColor)), object, SLOT(changeColor(QColor)));
     connect(list, SIGNAL(addTexture()), object, SLOT(addTexture()));
 }
 
@@ -249,13 +254,6 @@ void MainWindow::resizeMainWindow(GLuint newWidth, GLuint newHeight)  // Resizes
 
 
 /* ============================ LEFT TOOLBAR ============================ */
-void MainWindow::createTumor()
-{
-   if(actionTumor->isChecked())
-       object->createTumor(true);
-   else
-       object->createTumor(false);
-}
 void MainWindow::distanceMode()
 {
    if(distance->isChecked())
@@ -263,12 +261,20 @@ void MainWindow::distanceMode()
    else
        object->setDistanceMode(false);
 }
+void MainWindow::setVideoPath()
+{
+    object->setVideoPath(false);
+}
 void MainWindow::frameByFrameMode()
 {
    if(frameByFrame->isChecked())
        object->setFrameByFrameMode(true);
    else
        object->setFrameByFrameMode(false);
+}
+void MainWindow::addModel()
+{
+    object->addModel(QString(""));
 }
 
 void MainWindow::screenshot()
@@ -325,20 +331,30 @@ void MainWindow::settingsWindow()
         framePictureRatioLineEdit = new QLineEdit(QString("%1").arg(object->getFramePictureRatio()));
         rotationSpeedLineEdit = new QLineEdit(QString("%1").arg(object->getRotationSpeed()));
         tagsRadiusLineEdit = new QLineEdit(QString("%1").arg(object->getTagsRadius()));
+        tumorRadiusLineEdit = new QLineEdit(QString("%1").arg(object->getTumorRadius()));
+        tumorDepthLineEdit = new QLineEdit(QString("%1").arg(object->getTumorDepth()));
 
         QLabel *rotationSpeed = new QLabel("Speed of the rotation when the buttons Rotate Model \n(X or Y Axis) are clicked.");
         QLabel *tagsRadius = new QLabel("Radius of the spheres created in Distance Mode.");
+        QLabel *tumorRadius = new QLabel("Initial radius of the tumors.");
+        QLabel *tumorDepth = new QLabel("Initial depth of the tumors.");
 
         QFormLayout *formLayout1 = new QFormLayout;
 
 
-        formLayout1->addRow("&Ratio Frame/Picture :", framePictureRatioLineEdit);
+        formLayout1->addRow("&Ratio Frame/Picture:", framePictureRatioLineEdit);
 
-        formLayout1->addRow("Rotation &Speed (rad/s):", rotationSpeedLineEdit);
+        formLayout1->addRow("Rotation &Speed (°/s):", rotationSpeedLineEdit);
         formLayout1->addRow(rotationSpeed);
 
-        formLayout1->addRow("&Tags Radius (m) :", tagsRadiusLineEdit);
+        formLayout1->addRow("&Tags Radius (m):", tagsRadiusLineEdit);
         formLayout1->addRow(tagsRadius);
+
+        formLayout1->addRow("T&umors Radius (m):", tumorRadiusLineEdit);
+        formLayout1->addRow(tumorRadius);
+
+        formLayout1->addRow("Tumors &Depth (m):", tumorDepthLineEdit);
+        formLayout1->addRow(tumorDepth);
 
 
         display->setLayout(formLayout1);
@@ -408,8 +424,8 @@ void MainWindow::settingsWindow()
         far = new QLineEdit(QString("%1").arg(object->getCameraSettings(6)));
 
         QFormLayout *formLayout2 = new QFormLayout;
-        formLayout2->addRow("&Near :", near);
-        formLayout2->addRow("&Far :", far);
+        formLayout2->addRow("&Near:", near);
+        formLayout2->addRow("&Far:", far);
 
 
       // MAIN LAYOUT
@@ -429,10 +445,10 @@ void MainWindow::settingsWindow()
         QLabel *sens = new QLabel("Amplitude of the translation (Arrow keys or mouse wheel).");
         QLabel *sensPlus = new QLabel("Amplitude of the fine translation (Ctrl + arrow keys\nor mouse wheel).");
 
-        formLayout3->addRow("&Sensibility (m):", sensibilityLineEdit);
+        formLayout3->addRow("&Displacement (m):", sensibilityLineEdit);
         formLayout3->addRow(sens);
 
-        formLayout3->addRow("&Precision Sensibility (m) :", sensibilityPlusLineEdit);
+        formLayout3->addRow("Displacement &Precision (m):", sensibilityPlusLineEdit);
         formLayout3->addRow(sensPlus);
 
         sensibility->setLayout(formLayout3);
@@ -440,7 +456,7 @@ void MainWindow::settingsWindow()
 
     tabs->addTab(display, "Display");
     tabs->addTab(camera, "Camera");
-    tabs->addTab(sensibility, "Sensibility");
+    tabs->addTab(sensibility, "Displacement");
     tabs->adjustSize();
 
 
@@ -456,6 +472,8 @@ void MainWindow::sendSettings()
     object->setFramePictureRatio(framePictureRatioLineEdit->text().toFloat());
     object->setRotationSpeed(rotationSpeedLineEdit->text().toFloat());
     object->setTagsRadius(tagsRadiusLineEdit->text().toFloat());
+    object->setTumorRadius(tumorRadiusLineEdit->text().toFloat());
+    object->setTumorDepth(tumorDepthLineEdit->text().toFloat());
 
   // CAMERA
     object->setCameraSettings(0, alphaX->text().toFloat());
