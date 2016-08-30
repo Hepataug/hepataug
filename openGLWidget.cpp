@@ -29,12 +29,14 @@ OpenGLWidget::OpenGLWidget(QWidget *parent) : QGLWidget(parent)
 void OpenGLWidget::initializeGL()   // OPENGL SPACE INITIALIZATION
 {
     glEnable(GL_BLEND);                                 // Opacity ON
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // Opacity parameters
-    /*glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-  //  glBlendFunc(GL_ONE, GL_ONE);
 
-    glAlphaFunc(GL_GREATER, 0.1);
-    glEnable(GL_ALPHA_TEST);*/
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // Opacity parameters
+
+    glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE_ARB);
+
+
+
+
 
   // Default texture initialization
     backgroundTexture.setTexture(QString("./img/standardPicture1.jpg"));
@@ -180,12 +182,49 @@ void OpenGLWidget::paintGL()
 
         glTranslatef(distanceCoordinates1.x(), distanceCoordinates1.y(), distanceCoordinates1.z());
 
-        QMatrix4x4 m;
-        m.rotate(tagsRotation);
-        multMatrix(m);
+        QMatrix4x4 r;
+        r.rotate(tagsRotation);
+        multMatrix(r);
 
         glCallList(tags);
     glPopMatrix();
+
+
+    glActiveTextureARB(GL_TEXTURE0_ARB);
+    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_2D);
+    QMatrix4x4 m;
+    glActiveTextureARB(GL_TEXTURE1_ARB);
+    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_DOT_PRODUCT_NV);
+    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_PREVIOUS_TEXTURE_INPUT_NV, GL_TEXTURE0_ARB);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    glPopMatrix();
+    glMatrixMode(GL_TEXTURE);
+    glLoadIdentity();
+    glTranslatef( 0, 0,.5);
+    glScalef( 0, 0, .5);
+    glMatrixMode(GL_MODELVIEW);
+    glActiveTextureARB(GL_TEXTURE2_ARB);
+    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_DOT_PRODUCT_DEPTH_REPLACE_NV);
+    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_PREVIOUS_TEXTURE_INPUT_NV, GL_TEXTURE0_ARB);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
+    glPushMatrix();
+    glLoadIdentity();
+    glPopMatrix();
+    glMatrixMode(GL_TEXTURE);
+    glLoadIdentity();
+    m(0,0) = 0;   m(0,1) = 0;   m(0,2) = 0;   m(0,3) = 0;
+    m(1,0) = 0;   m(1,1) = 0;   m(1,2) = 0;   m(1,3) = 0;
+    m(2,0) = 0;   m(2,1) = 0;   m(2,2) = 0;   m(2,3) = 1;  // move q to r
+    m(3,0) = 0;   m(3,1) = 0;   m(3,2) = 0;   m(3,3) = 0;
+    multMatrix(m);
+    glMatrixMode(GL_MODELVIEW);
+    glActiveTextureARB(GL_TEXTURE3_ARB);
+    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_RECTANGLE_NV);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
+    glActiveTextureARB(GL_TEXTURE0_ARB);
 
 
 
@@ -398,11 +437,10 @@ void OpenGLWidget::frameByFrameScreenshot(Mat frame)
     backgroundTexture.saveTexture(frame, framesFolder);
 
     QVector<GLuint> vectorModels;
-    for(GLuint i = 1; i > (GLuint)modelsList.size(); i++)
+    for(GLuint i = 0; i < (GLuint)modelsList.size(); i++)
         vectorModels.push_back(i);
 
-    if(!selectedModel.isEmpty())
-        model.saveModel(QStringList(QString("model%1").arg(screenshotNumber)), vectorModels, true);
+    model.saveModel(QStringList(QString("%1/model%2").arg(framesFolder).arg(screenshotNumber)), vectorModels, true);
 
     screenshotNumber++;
 }
@@ -425,7 +463,10 @@ void OpenGLWidget::addModel(QString modelName)
         }
 
         if(modelsListInit.contains(modelName))
+        {
             QMessageBox::warning(this, "Model already loaded", "This model is already loaded. Please select a different model.");
+            break;
+        }
     } while(modelsListInit.contains(modelName));
 
     updateModelsList();
@@ -595,7 +636,7 @@ void OpenGLWidget::addTexture()
             model.loadTexture(texturePath, modelNumber);
         }
         else
-            for(GLuint i = (GLuint)checkedModels.size()-1; i <= 0; i--)
+            for(GLuint i = 0; i < (GLuint)checkedModels.size(); i++)
             {
                 GLuint modelNumber = checkedModels.at(i);
                 Model currentModel = model.getModelSettings(modelNumber);
@@ -629,18 +670,24 @@ void OpenGLWidget::centerModels()    // Puts the center of the selected models o
 void OpenGLWidget::rotateX()         // Rotates the model at 360° around X axis
 {
     QVector<QQuaternion> memoryRot;
-    QVector<QVector3D> memoryPos;
+    QVector<QVector3D> memoryPos, orthonormals;
+
     for(GLuint i = 0; i < (GLuint)checkedModels.size(); i++)
     {
         Model currentModel = model.getModelSettings(checkedModels.at(i));
         memoryRot.push_back(currentModel.rotation);
         memoryPos.push_back(currentModel.position);
-    }
 
-    QVector<QVector3D> orthonormals;
-    for(GLuint i = 0; i < (GLuint)checkedModels.size(); i++)
+        QMatrix4x4 m;
+        m.rotate(currentModel.rotation);
+        orthonormals.push_back(m.transposed() * QVector3D(1,0,0));
+    }
+    if(referenceModel >= 0 && !checkedModels.contains(referenceModel))
     {
-        Model currentModel = model.getModelSettings(checkedModels.at(i));
+        Model currentModel = model.getModelSettings(referenceModel);
+        memoryRot.push_back(currentModel.rotation);
+        memoryPos.push_back(currentModel.position);
+
         QMatrix4x4 m;
         m.rotate(currentModel.rotation);
         orthonormals.push_back(m.transposed() * QVector3D(1,0,0));
@@ -648,6 +695,10 @@ void OpenGLWidget::rotateX()         // Rotates the model at 360° around X axis
 
     const QQuaternion tagsRotationInit = tagsRotation;
     const QVector3D distanceCoordInit = distanceCoordinates1;
+
+    QMatrix4x4 m;
+    m.rotate(tagsRotationInit);
+    const QVector3D orthonormalDistance = m.transposed() * QVector3D(1,0,0);
 
 
     QTime time;
@@ -662,17 +713,17 @@ void OpenGLWidget::rotateX()         // Rotates the model at 360° around X axis
 
             if(referenceModel >= 0 && (GLint)i != referenceModel)
             {
-                Model ref = model.getModelSettings(referenceModel);
-
                 QMatrix4x4 temp;
-                temp.translate(memoryPos.at(referenceModel)-memoryPos.at(i));
-                temp.rotate(ref.rotation);
-                temp.translate(-memoryPos.at(referenceModel)+memoryPos.at(i));
+                temp.translate(memoryPos.at(referenceModel) - memoryPos.at(i));
+                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(1,0,0), -time.elapsed()*rotationSpeed/1000));
+                temp.translate(-memoryPos.at(referenceModel) + memoryPos.at(i));
+
 
                 QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
 
                 currentModel.position = memoryPos.at(i) + translation;
-                currentModel.rotation = memoryRot.at(i) * QQuaternion::fromAxisAndAngle(orthonormals.at(referenceModel), -time.elapsed()*rotationSpeed/1000);
+                currentModel.rotation = memoryRot.at(i) *
+                    QQuaternion::fromAxisAndAngle(orthonormals.at(i), -time.elapsed()*rotationSpeed/1000);
             }
             else
                 currentModel.rotation = memoryRot.at(i) * QQuaternion::fromAxisAndAngle(orthonormals.at(i), -time.elapsed()*rotationSpeed/1000);
@@ -682,14 +733,15 @@ void OpenGLWidget::rotateX()         // Rotates the model at 360° around X axis
             if(!distanceCoordinates1.isNull() && (GLint)checkedModels.at(i) == referenceModel)
             {
                 QMatrix4x4 temp;
-                temp.translate(currentModel.position-distanceCoordInit);
-                temp.rotate(currentModel.rotation);
-                temp.translate(-currentModel.position+distanceCoordInit);
+                temp.translate(memoryPos.at(referenceModel)-distanceCoordInit);
+                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(1,0,0), -time.elapsed()*rotationSpeed/1000));
+                temp.translate(-memoryPos.at(referenceModel)+distanceCoordInit);
 
                 QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
 
                 distanceCoordinates1 = distanceCoordInit + translation;
-                tagsRotation = tagsRotationInit * QQuaternion::fromAxisAndAngle(orthonormals.at(i), -time.elapsed()*rotationSpeed/1000);
+                tagsRotation = tagsRotationInit *
+                    QQuaternion::fromAxisAndAngle(orthonormalDistance, -time.elapsed()*rotationSpeed/1000);
             }
         }
 
@@ -710,43 +762,95 @@ void OpenGLWidget::rotateX()         // Rotates the model at 360° around X axis
 }
 void OpenGLWidget::rotateY()         // Rotates the model at 360° around Y axis
 {
-    QVector<QQuaternion> memory;
-    for(GLuint i = 0; i < (GLuint)checkedModels.size(); i++)
-    {
-        Model currentModel = model.getModelSettings(checkedModels.at(i));
-        memory.push_back(currentModel.rotation);
-    }
+    QVector<QQuaternion> memoryRot;
+    QVector<QVector3D> memoryPos, orthonormals;
 
-    QVector<QVector3D> orthonormals;
     for(GLuint i = 0; i < (GLuint)checkedModels.size(); i++)
     {
         Model currentModel = model.getModelSettings(checkedModels.at(i));
+        memoryRot.push_back(currentModel.rotation);
+        memoryPos.push_back(currentModel.position);
+
         QMatrix4x4 m;
         m.rotate(currentModel.rotation);
         orthonormals.push_back(m.transposed() * QVector3D(0,1,0));
-        model.setModelSettings(currentModel, checkedModels.at(i));
     }
+    if(referenceModel >= 0 && !checkedModels.contains(referenceModel))
+    {
+        Model currentModel = model.getModelSettings(referenceModel);
+        memoryRot.push_back(currentModel.rotation);
+        memoryPos.push_back(currentModel.position);
+
+        QMatrix4x4 m;
+        m.rotate(currentModel.rotation);
+        orthonormals.push_back(m.transposed() * QVector3D(0,1,0));
+    }
+
+    const QQuaternion tagsRotationInit = tagsRotation;
+    const QVector3D distanceCoordInit = distanceCoordinates1;
+
+    QMatrix4x4 m;
+    m.rotate(tagsRotationInit);
+    const QVector3D orthonormalDistance = m.transposed() * QVector3D(0,1,0);
+
 
     QTime time;
     time.start();
+
 
     while(time.elapsed()*rotationSpeed/1000 < 360.f)
     {
         for(GLuint i = 0; i < (GLuint)checkedModels.size(); i++)
         {
             Model currentModel = model.getModelSettings(checkedModels.at(i));
-            currentModel.rotation = QQuaternion::fromAxisAndAngle(orthonormals.at(i),-time.elapsed()*rotationSpeed/1000) * memory.at(i);
+
+            if(referenceModel >= 0 && (GLint)i != referenceModel)
+            {
+                QMatrix4x4 temp;
+                temp.translate(memoryPos.at(referenceModel) - memoryPos.at(i));
+                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(0,1,0), -time.elapsed()*rotationSpeed/1000));
+                temp.translate(-memoryPos.at(referenceModel) + memoryPos.at(i));
+
+
+                QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
+
+                currentModel.position = memoryPos.at(i) + translation;
+                currentModel.rotation = memoryRot.at(i) *
+                    QQuaternion::fromAxisAndAngle(orthonormals.at(i), -time.elapsed()*rotationSpeed/1000);
+            }
+            else
+                currentModel.rotation = memoryRot.at(i) * QQuaternion::fromAxisAndAngle(orthonormals.at(i), -time.elapsed()*rotationSpeed/1000);
+
             model.setModelSettings(currentModel, checkedModels.at(i));
+
+            if(!distanceCoordinates1.isNull() && (GLint)checkedModels.at(i) == referenceModel)
+            {
+                QMatrix4x4 temp;
+                temp.translate(memoryPos.at(referenceModel)-distanceCoordInit);
+                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(0,1,0), -time.elapsed()*rotationSpeed/1000));
+                temp.translate(-memoryPos.at(referenceModel)+distanceCoordInit);
+
+                QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
+
+                distanceCoordinates1 = distanceCoordInit + translation;
+                tagsRotation = tagsRotationInit *
+                    QQuaternion::fromAxisAndAngle(orthonormalDistance, -time.elapsed()*rotationSpeed/1000);
+            }
         }
+
         updateGL();
     }
 
     for(GLuint i = 0; i < (GLuint)checkedModels.size(); i++)
     {
         Model currentModel = model.getModelSettings(checkedModels.at(i));
-        currentModel.rotation = memory.at(i);
+        currentModel.rotation = memoryRot.at(i);
+        currentModel.position = memoryPos.at(i);
         model.setModelSettings(currentModel, checkedModels.at(i));
     }
+
+    distanceCoordinates1 = distanceCoordInit;
+    tagsRotation = tagsRotationInit;
     updateGL();
 }
 
@@ -755,7 +859,22 @@ void OpenGLWidget::rotateY()         // Rotates the model at 360° around Y axis
 /* ============================ OTHER MODELS ============================ */
 void OpenGLWidget::createTumor()
 {
+    bool existingTumor = false;
+
+    for(GLuint i = 0; i < (GLuint)modelsList.size(); i++)
+    {
+        Model currentModel = model.getModelSettings(checkedModels.at(i));
+        if(currentModel.tumorRadius > 0)
+        {
+            existingTumor = true;
+            break;
+        }
+    }
+
     addModel(QString("./img/tumor.obj"));
+
+    if(existingTumor)
+        return;
 
     Model tumor = model.getModelSettings(modelsList.size()-1);
 
@@ -847,7 +966,7 @@ void OpenGLWidget::createTags(QPointF screenCoordinates)
 
 
 
-/* ============================ MOUSE AND KEYBOARD TRANSFORMATIONS ============================ */
+/* ============================ MOUSE AND KEYBOARD EVENTS ============================ */
 void OpenGLWidget::mouseMoveEvent(QMouseEvent *e)
 {
     if(e->buttons() & Qt::LeftButton && !checkedModels.isEmpty())

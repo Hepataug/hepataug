@@ -159,7 +159,7 @@ void GLmodel::loadModel(QString fileName, GLuint firstModelNumber)
         QString MTLPath(fileName);
         MTLPath.remove(MTLPath.size() - BaseName.size(), BaseName.size());
 
-        if(Models.at(modelNumber).vtFile && !Models.at(modelNumber).mtllib.isEmpty())
+        if(!Models.at(modelNumber).mtllib.isEmpty())
             loadMTL(MTLPath, modelNumber);
         else
             Models[modelNumber].color = QVector4D(1.f, 0.f, 0.f, 1.f);
@@ -255,8 +255,40 @@ void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber
 
             fluxOut <<endl<< "o " << Models.at(modelsNumber.at(n)).modelName <<endl<<endl;
 
+
+            QString path = Models.at(modelsNumber.at(n)).fileName;
+            QStringList lineList = path.split('/');
+            path = path.remove(path.indexOf(lineList.last()), lineList.at(lineList.size()-1).length());
+            QString newPath = newFile.fileName();
+            QStringList lineList2 = newPath.split('/');
+            newPath = newPath.remove(newPath.indexOf(lineList2.last()), lineList2.at(lineList2.size()-1).length());
+
+
             if(!Models.at(modelsNumber.at(n)).mtllib.isEmpty())
                 fluxOut << "mtllib " << Models.at(modelsNumber.at(n)).mtllib <<endl<<endl;
+
+            else if(!Models.at(modelsNumber.at(n)).textureName.isEmpty())
+            {
+                QStringList lineList = Models.at(modelsNumber.at(n)).textureName.split('/');
+                QFile texture(Models.at(modelsNumber.at(n)).textureName);
+                texture.copy(newPath + lineList.last());
+
+                QStringList nameList = Models.at(modelsNumber.at(n)).modelName.split('/');
+                QString name = nameList.last().split('.').at(0) + QString(".mtl");
+
+                QFile newMtllibFile(name);
+
+                if (!newMtllibFile.open(QIODevice::WriteOnly | QIODevice::Text))
+                    return;
+
+                QTextStream flux(&newMtllibFile);
+                flux.setCodec("UTF-8");
+                flux << "map_Kd " << lineList.last();
+
+                newMtllibFile.close();
+
+                fluxOut << "mtllib " << name <<endl<<endl;
+            }
 
             QString fileLine;
 
@@ -401,7 +433,6 @@ void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber
             if(extension=="")
                 QTextStream(&newModelsNames[n])<<".obj";
 
-
             /* ============================ FILE WRITING ============================ */
 
             QFile newFile(newModelsNames.at(n));
@@ -432,9 +463,39 @@ void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber
             << "####" <<endl<<endl;
 
 
-            if(!Models.at(modelsNumber.at(n)).mtllib.isEmpty())
-                fluxOut << "mtllib " << Models.at(modelsNumber.at(n)).mtllib <<endl;
+            QString path = Models.at(modelsNumber.at(n)).fileName;
+            QStringList lineList = path.split('/');
+            path = path.remove(path.indexOf(lineList.last()), lineList.at(lineList.size()-1).length());
+            QString newPath = newFile.fileName();
+            QStringList lineList2 = newPath.split('/');
+            newPath = newPath.remove(newPath.indexOf(lineList2.last()), lineList2.at(lineList2.size()-1).length());
 
+
+            if(!Models.at(modelsNumber.at(n)).mtllib.isEmpty())
+                fluxOut << "mtllib " << Models.at(modelsNumber.at(n)).mtllib <<endl<<endl;
+
+            else if(!Models.at(modelsNumber.at(n)).textureName.isEmpty())
+            {
+                QStringList lineList = Models.at(modelsNumber.at(n)).textureName.split('/');
+                QFile texture(Models.at(modelsNumber.at(n)).textureName);
+                texture.copy(newPath + lineList.last());
+
+                QStringList nameList = Models.at(modelsNumber.at(n)).modelName.split('/');
+                QString name = nameList.last().split('.').at(0) + QString(".mtl");
+
+                QFile newMtllibFile(name);
+
+                if (!newMtllibFile.open(QIODevice::WriteOnly | QIODevice::Text))
+                    return;
+
+                QTextStream flux(&newMtllibFile);
+                flux.setCodec("UTF-8");
+                flux << "map_Kd " << lineList.last();
+
+                newMtllibFile.close();
+
+                fluxOut << "mtllib " << name <<endl<<endl;
+            }
 
             while(!fileText.atEnd())
             {
@@ -509,16 +570,7 @@ void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber
 
             if(!Models.at(modelsNumber.at(n)).mtllib.isEmpty())
             {
-                QString path = Models.at(modelsNumber.at(n)).fileName;
-                QStringList lineList = path.split('/');
-                path = path.remove(path.indexOf(lineList.last()), lineList.at(lineList.size()-1).length());
-
                 QFile mtllibFile(path + Models.at(modelsNumber.at(n)).mtllib);
-
-                QString newPath = newFile.fileName();
-                QStringList lineList2 = newPath.split('/');
-                newPath = newPath.remove(newPath.indexOf(lineList2.last()), lineList2.at(lineList2.size()-1).length());
-
                 mtllibFile.copy(newPath + Models.at(modelsNumber.at(n)).mtllib);
 
 
