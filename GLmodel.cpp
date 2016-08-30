@@ -313,7 +313,10 @@ void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber
                     QStringList lineList = fileLine.split(" ");
                     QVector3D coords(lineList[1].toFloat(), lineList[2].toFloat(), lineList[3].toFloat());
 
-                    coords = r * (coords - Models.at(modelsNumber.at(n)).origin) + Models.at(modelsNumber.at(n)).position;
+                    if(Models.at(modelsNumber.at(n)).tumorRadius > 0)
+                        coords = r * (coords*Models.at(modelsNumber.at(n)).tumorRadius/0.33 - Models.at(modelsNumber.at(n)).origin) + Models.at(modelsNumber.at(n)).position;
+                    else
+                        coords = r * (coords - Models.at(modelsNumber.at(n)).origin) + Models.at(modelsNumber.at(n)).position;
 
                     fluxOut << "v " << QString::number(coords.x(), 'f', 6)
                             << " " << QString::number(coords.y(), 'f', 6)
@@ -512,7 +515,10 @@ void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber
                     QStringList lineList = fileLine.split(" ");
                     QVector3D coords(lineList[1].toFloat(), lineList[2].toFloat(), lineList[3].toFloat());
 
-                    coords = r * (coords - Models.at(modelsNumber.at(n)).origin) + Models.at(modelsNumber.at(n)).position;
+                    if(Models.at(modelsNumber.at(n)).tumorRadius > 0)
+                        coords = r * (coords*Models.at(modelsNumber.at(n)).tumorRadius/0.33 - Models.at(modelsNumber.at(n)).origin) + Models.at(modelsNumber.at(n)).position;
+                    else
+                        coords = r * (coords - Models.at(modelsNumber.at(n)).origin) + Models.at(modelsNumber.at(n)).position;
 
                     fluxOut << "v " << QString::number(coords.x(), 'f', 6)
                             << " " << QString::number(coords.y(), 'f', 6)

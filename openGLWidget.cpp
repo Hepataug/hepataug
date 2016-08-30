@@ -164,10 +164,6 @@ void OpenGLWidget::paintGL()
 // SCALE
     glScalef(scaleFactor,scaleFactor,scaleFactor);
 
-    Model reference;
-    if(referenceModel >= 0)
-        reference = model.getModelSettings(referenceModel);
-
 
 
 // TAGS
@@ -182,7 +178,6 @@ void OpenGLWidget::paintGL()
 
         glCallList(tags);
     glPopMatrix();
-
 
 
 
