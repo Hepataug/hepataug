@@ -13,9 +13,9 @@ class ModelsListWidget : public QListWidget
     Q_OBJECT
 
 private:
-    QVector<GLuint> checked;
-    QString selectedItem, referenceModel;
-    QStringList pathsList;
+    QVector<GLuint> checked;    // List of checked items number
+    QString selectedItem, referenceModel;   // Name of the selected model and the reference model
+    QStringList pathsList;  // List of the models name
 
     QAction* referenceModelButton;
 

@@ -5,18 +5,19 @@ MainWindow::MainWindow()
 {
     screenshotNumber = 1;       // Number of screenshots taken
 
-    QWidget *widgetPrincipal = new QWidget;
+    QWidget *widgetPrincipal = new QWidget; // Main widget containing the main layout
     setCentralWidget(widgetPrincipal);
 
-    layoutPrincipal = new QGridLayout(widgetPrincipal);
+    layoutPrincipal = new QGridLayout(widgetPrincipal); // Main layout containing the OpenGLWidget and the toolbars
     widgetPrincipal->setLayout(layoutPrincipal);
 
-    object = new OpenGLWidget;
+    object = new OpenGLWidget;              // Creation of an OpenGLWidget object
     layoutPrincipal->addWidget(object);
     layoutPrincipal->setMargin(0);
 
 
-// LEFT TOOLBAR
+
+// LEFT TOOLBAR BUTTONS
 
     leftToolBar = addToolBar("Left Toolbar");
     leftToolBar->setIconSize(QSize(40,40));
@@ -96,12 +97,14 @@ MainWindow::MainWindow()
     addToolBar(Qt::LeftToolBarArea, leftToolBar);
 
 
-// RIGHT TOOLBAR
+
+
+// RIGHT TOOLBAR ELEMENTS
     rightToolBar = addToolBar("Right Toolbar");
     const QSize sliderSize(60,100);
 
-    QWidget *slidersWidget = new QWidget(rightToolBar);
-    QVBoxLayout *slidersLayout = new QVBoxLayout(slidersWidget);
+    QWidget *slidersWidget = new QWidget(rightToolBar);     // Widget containing the right toolbar layout
+    QVBoxLayout *slidersLayout = new QVBoxLayout(slidersWidget);    // Layout containing the right toolbar elements
     slidersLayout->setAlignment(Qt::AlignCenter);
 
 
@@ -167,7 +170,7 @@ MainWindow::MainWindow()
         rightToolBar->addWidget(modelsListTitle);
 
       // MODELS LIST
-        list = new ModelsListWidget;
+        list = new ModelsListWidget;    // Creation of a ModelsListWidget object
         list->setFixedWidth(170);
         rightToolBar->addWidget(list);
 
@@ -176,7 +179,7 @@ MainWindow::MainWindow()
 
 
 
-    /* ============================ CONNECTIONS ============================ */
+    /* ============================ SIGNAL-SLOT CONNECTIONS ============================ */
 
 // AUTO-RESIZE
     connect(object, SIGNAL(pictureChanged(GLuint,GLuint)), this, SLOT(resizeMainWindow(GLuint,GLuint)));
@@ -201,7 +204,7 @@ MainWindow::MainWindow()
     connect(rotateX, SIGNAL(triggered()), object, SLOT(rotateX()));
     connect(rotateY, SIGNAL(triggered()), object, SLOT(rotateY()));
 
-    connect(actionScreenshot, SIGNAL(triggered()), this, SLOT(screenshot()));
+    connect(actionScreenshot, SIGNAL(triggered()), this, SLOT(takeScreenshot()));
 
     connect(frameByFrame, SIGNAL(changed()), this, SLOT(frameByFrameMode()));
     connect(object, SIGNAL(frameByFrameModeOFF(bool)), frameByFrame, SLOT(setChecked(bool)));
@@ -236,78 +239,76 @@ MainWindow::MainWindow()
 }
 
 
-void MainWindow::resizeMainWindow(GLuint newWidth, GLuint newHeight)  // Resizes main window when openGLWidget size changes
+void MainWindow::resizeMainWindow(GLuint newWidth, GLuint newHeight)  // Resizes main window when OpenGLWidget size changes
 {
     QDesktopWidget rec;
     QRect mainScreenSize = rec.availableGeometry(rec.primaryScreen());
 
-    if((newHeight+20)<(GLuint)mainScreenSize.height())
+    if((newHeight+20)<(GLuint)mainScreenSize.height())   // Test: The window cannot be larger than the screen
         this->setFixedHeight(newHeight+20);
     else
         this->setFixedHeight(mainScreenSize.height()-28);
 
-    if(newWidth+rightToolBar->width()+leftToolBar->width()+20<(GLuint)mainScreenSize.width())
+    if(newWidth+rightToolBar->width()+leftToolBar->width()+20<(GLuint)mainScreenSize.width()) // Test: The window cannot be higher than the screen
         this->setFixedWidth(newWidth+rightToolBar->width()+leftToolBar->width()+20);
     else
         this->setFixedWidth(mainScreenSize.width());
 }
 
 
+
 /* ============================ LEFT TOOLBAR ============================ */
-void MainWindow::distanceMode()
+void MainWindow::distanceMode() // Send the state of the button "Distance Mode" to the OpenGLWidget
 {
    if(distance->isChecked())
        object->setDistanceMode(true);
    else
        object->setDistanceMode(false);
 }
-void MainWindow::setVideoPath()
+void MainWindow::setVideoPath() // Calls the OpenGLWidget function setVideoPath(false) which indicates the "Frame By Frame Mode" is OFF
 {
     object->setVideoPath(false);
 }
-void MainWindow::frameByFrameMode()
+void MainWindow::frameByFrameMode() // Send the state of the button "Frame By Frame Mode" to the OpenGLWidget
 {
    if(frameByFrame->isChecked())
        object->setFrameByFrameMode(true);
    else
        object->setFrameByFrameMode(false);
 }
-void MainWindow::addModel()
+void MainWindow::addModel() // Calls the OpenGLWidget function addModel with an empty QString for the user to select a file to open
 {
     object->addModel(QString(""));
 }
 
-void MainWindow::screenshot()
+void MainWindow::takeScreenshot() // Takes a screenshot without specifying a folder
+{
+    screenshot(QString(""));
+}
+void MainWindow::screenshot(QString path) // Takes a screenshot in the selected folder
 {
     QImage image = object->grabFrameBuffer();
-
+    QString fileName;
     QString format = "png";
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save As"),
-                               QString("screenshot%1.").arg(screenshotNumber) + format,
-                               QString("%1 Files (*.%2);;All Files (*)")
-                               .arg(format.toUpper())
-                               .arg(format));
-    if(!fileName.isEmpty())
-    {
-        image.save(fileName, qPrintable(format));
-        screenshotNumber++;
-    }
-}
-void MainWindow::screenshot(QString path)
-{
-    QImage image = object->grabFrameBuffer();
 
-    QString format = "png";
-    QString fileName = path + QString("/screenshot%1.%2").arg(screenshotNumber).arg(format);
+    if(path.isEmpty())  // If the argument is empty, the user has to chose a folder to save the screenshot into
+        fileName = QFileDialog::getSaveFileName(this, tr("Save As"),
+                                   QString("screenshot%1.").arg(screenshotNumber) + format,
+                                   QString("%1 Files (*.%2);;All Files (*)")
+                                   .arg(format.toUpper())
+                                   .arg(format));
+    else
+        fileName = path + QString("/screenshot%1.%2").arg(screenshotNumber).arg(format);
 
-    if(!fileName.isEmpty())
-    {
-        image.save(fileName, qPrintable(format));
-        screenshotNumber++;
-    }
+    if(fileName.isEmpty())
+        return;
+
+    image.save(fileName, qPrintable(format));
+    screenshotNumber++;
+
 }
 
-void MainWindow::settingsWindow()
+void MainWindow::settingsWindow()   // Opens the settings window
 {
     QDialog *settings = new QDialog(this);
     settings->setWindowTitle("Settings");
@@ -466,7 +467,7 @@ void MainWindow::settingsWindow()
     if(settings->exec() == QDialog::Accepted)
         sendSettings();
 }
-void MainWindow::sendSettings()
+void MainWindow::sendSettings() // Applies the new settings from the settings window
 {
   // DISPLAY
     object->setFramePictureRatio(framePictureRatioLineEdit->text().toFloat());
@@ -490,24 +491,25 @@ void MainWindow::sendSettings()
 }
 
 
+
 /* ============================ RIGHT TOOLBAR ============================ */
 void MainWindow::updateToolTip(int sliderValue)     // Updates opacity tooltip
 {
     QToolTip::showText(QCursor::pos(),QString("%1%").arg(sliderValue));
 }
-void MainWindow::scaleSliderState()
+void MainWindow::scaleSliderState() // Send the sale slider state and value to the OpenGLWidget object
 {
     object->scaleSliderState(scaleSlider->isSliderDown());
     object->setCameraSettings(7, (GLfloat)scaleSlider->value()/100);
     focusOFF();
 }
 
-void MainWindow::updateModelsList()
+void MainWindow::updateModelsList() // Updates the models list
 {
     list->updateModelsList(object->getModelsList());
 }
 
-void MainWindow::focusOFF()     // Disables sliders focus
+void MainWindow::focusOFF()     // Set keyboard focus onto the OpenGLWidget
 {
     object->setFocus();
 }

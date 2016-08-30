@@ -21,10 +21,10 @@ public:
 
 
 private:
-    QQuaternion m_rotation;
+    QQuaternion rotationQ;
 
-    QPointF m_lastPos;
-    QTime m_lastTime;
+    QPointF lastPos;
+    QTime lastTime;
 };
 
 #endif // TRACKBALL_H

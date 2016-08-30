@@ -27,9 +27,10 @@ private:
     QImage matToQImage(Mat const& image);
 
     GLuint texture[1];
-    GLuint screenshotNumber;
-    bool resizeWidget;
-    GLint width, height;
+    GLuint screenshotNumber;    // Number of screenshots taken
+    bool resizeWidget;  // Set if the OpenGLWidget will be resized with the texture size or not
+
+    GLint width, height;    // Texture size
 };
 
 #endif // GLTEXTURE_H

@@ -6,8 +6,8 @@ int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
 
-    MainWindow fenetre;
-    fenetre.setWindowTitle(QString::fromUtf8("HEPATAUG"));
+    MainWindow fenetre;                                     // Creation of an object MainWindow
+    fenetre.setWindowTitle(QString::fromUtf8("HEPATAUG"));  // Window title
     fenetre.show();
 
     return app.exec();

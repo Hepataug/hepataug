@@ -5,7 +5,7 @@ ModelsListWidget::ModelsListWidget(QWidget *parent) : QListWidget(parent)
 {
     this->setContextMenuPolicy(Qt::ActionsContextMenu);
 
-   // RIGHT CLIC ACTIONS
+  // RIGHT CLICK MENU ACTIONS
     QAction *addModelButton = new QAction("&Add Model", this);
     QAction *saveModelButton = new QAction("&Save Model", this);
     QAction *removeModelButton = new QAction("&Remove Model", this);
@@ -26,10 +26,12 @@ ModelsListWidget::ModelsListWidget(QWidget *parent) : QListWidget(parent)
 
     /* ============================ CONNECTIONS ============================ */
 
+  // ITEM CLICK EVENTS
     connect(this, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(setSelected(QListWidgetItem*)));
     connect(this, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(emitReferenceModel()));
     connect(this, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(updateCheckedModels()));
 
+  // RIGHT CLICK MENU
     connect(addModelButton, SIGNAL(triggered()), this, SLOT(emitAddModel()));
     connect(saveModelButton, SIGNAL(triggered()), this, SLOT(emitSaveModels()));
     connect(removeModelButton, SIGNAL(triggered()), this, SLOT(emitRemoveModels()));
@@ -38,13 +40,13 @@ ModelsListWidget::ModelsListWidget(QWidget *parent) : QListWidget(parent)
     connect(referenceModelButton, SIGNAL(triggered()), this, SLOT(emitReferenceModel()));
 }
 
-void ModelsListWidget::mousePressEvent(QMouseEvent *event)
+void ModelsListWidget::mousePressEvent(QMouseEvent *event)  // MOUSE EVENTS
 {
     if(event->button() == Qt::RightButton)
     {
         QListWidgetItem *clickedItem = this->itemAt(event->pos());
 
-        if(clickedItem)
+        if(clickedItem) // Detection of the clicked item
         {
             for(GLuint i = 0; i < (GLuint)pathsList.size(); i++)
                 if(pathsList.at(i).contains(clickedItem->text()))
@@ -58,14 +60,14 @@ void ModelsListWidget::mousePressEvent(QMouseEvent *event)
     }
     else
     {
-        QListWidget::mousePressEvent(event);
+        QListWidget::mousePressEvent(event);    // No item selected
         selectedItem = QString("");
     }
 }
 
 
 /* ============================ UPDATE ============================ */
-void ModelsListWidget::updateModelsList(QStringList items)
+void ModelsListWidget::updateModelsList(QStringList items)  // Updates the models list from OpenGLWidget models list, via MainWindow connection
 {
     GLuint initialSize = this->count();
     this->clear();
@@ -92,7 +94,7 @@ void ModelsListWidget::updateModelsList(QStringList items)
     changeItemsFont();
     updateCheckedModels();
 }
-void ModelsListWidget::updateCheckedModels()
+void ModelsListWidget::updateCheckedModels()    // Updates the checked models list and send it to OpenGLWidget via MainWindow connection
 {
     checked.clear();
     for(GLuint i = 0; i < (GLuint)this->count(); i++)
@@ -101,9 +103,15 @@ void ModelsListWidget::updateCheckedModels()
 
     emit updateCheckedModels(checked);
 }
+void ModelsListWidget::setSelected(QListWidgetItem* item)
+{
+    for(GLuint i = 0; i < (GLuint)pathsList.size(); i++)
+        if(pathsList.at(i).contains(item->text()))
+            selectedItem = pathsList.at(i);
+}
 
 
-/* ============================ SIGNALS ============================ */
+/* ============================ MENU SIGNALS ============================ */
 void ModelsListWidget::emitAddModel()
 {
     emit addModel();
@@ -172,11 +180,4 @@ void ModelsListWidget::changeItemsFont()
     }
 
     emit referenceModelChanged(referenceModel);
-}
-
-void ModelsListWidget::setSelected(QListWidgetItem* item)
-{
-    for(GLuint i = 0; i < (GLuint)pathsList.size(); i++)
-        if(pathsList.at(i).contains(item->text()))
-            selectedItem = pathsList.at(i);
 }

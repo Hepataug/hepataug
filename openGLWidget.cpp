@@ -671,18 +671,18 @@ void OpenGLWidget::rotateX()         // Rotates the model at 360° around X axis
             {
                 QMatrix4x4 temp;
                 temp.translate(memoryPos.at(referenceModel) - memoryPos.at(i));
-                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(1,0,0), -time.elapsed()*rotationSpeed/1000));
+                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(1,0,0), time.elapsed()*rotationSpeed/1000));
                 temp.translate(-memoryPos.at(referenceModel) + memoryPos.at(i));
 
 
                 QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
 
                 currentModel.position = memoryPos.at(i) + translation;
-                currentModel.rotation = memoryRot.at(i) *
-                    QQuaternion::fromAxisAndAngle(orthonormals.at(i), -time.elapsed()*rotationSpeed/1000);
+                currentModel.rotation =
+                    QQuaternion::fromAxisAndAngle(orthonormals.at(i), time.elapsed()*rotationSpeed/1000) * memoryRot.at(i);
             }
             else
-                currentModel.rotation = memoryRot.at(i) * QQuaternion::fromAxisAndAngle(orthonormals.at(i), -time.elapsed()*rotationSpeed/1000);
+                currentModel.rotation = QQuaternion::fromAxisAndAngle(orthonormals.at(i), time.elapsed()*rotationSpeed/1000) * memoryRot.at(i);
 
             model.setModelSettings(currentModel, checkedModels.at(i));
 
@@ -690,14 +690,14 @@ void OpenGLWidget::rotateX()         // Rotates the model at 360° around X axis
             {
                 QMatrix4x4 temp;
                 temp.translate(memoryPos.at(referenceModel)-distanceCoordInit);
-                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(1,0,0), -time.elapsed()*rotationSpeed/1000));
+                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(1,0,0), time.elapsed()*rotationSpeed/1000));
                 temp.translate(-memoryPos.at(referenceModel)+distanceCoordInit);
 
                 QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
 
                 distanceCoordinates1 = distanceCoordInit + translation;
-                tagsRotation = tagsRotationInit *
-                    QQuaternion::fromAxisAndAngle(orthonormalDistance, -time.elapsed()*rotationSpeed/1000);
+                tagsRotation =
+                    QQuaternion::fromAxisAndAngle(orthonormalDistance, time.elapsed()*rotationSpeed/1000) * tagsRotationInit;
             }
         }
 
@@ -764,18 +764,18 @@ void OpenGLWidget::rotateY()         // Rotates the model at 360° around Y axis
             {
                 QMatrix4x4 temp;
                 temp.translate(memoryPos.at(referenceModel) - memoryPos.at(i));
-                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(0,1,0), -time.elapsed()*rotationSpeed/1000));
+                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(0,1,0), time.elapsed()*rotationSpeed/1000));
                 temp.translate(-memoryPos.at(referenceModel) + memoryPos.at(i));
 
 
                 QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
 
                 currentModel.position = memoryPos.at(i) + translation;
-                currentModel.rotation = memoryRot.at(i) *
-                    QQuaternion::fromAxisAndAngle(orthonormals.at(i), -time.elapsed()*rotationSpeed/1000);
+                currentModel.rotation =
+                    QQuaternion::fromAxisAndAngle(orthonormals.at(i), time.elapsed()*rotationSpeed/1000) * memoryRot.at(i);
             }
             else
-                currentModel.rotation = memoryRot.at(i) * QQuaternion::fromAxisAndAngle(orthonormals.at(i), -time.elapsed()*rotationSpeed/1000);
+                currentModel.rotation = QQuaternion::fromAxisAndAngle(orthonormals.at(i), time.elapsed()*rotationSpeed/1000) * memoryRot.at(i);
 
             model.setModelSettings(currentModel, checkedModels.at(i));
 
@@ -783,14 +783,14 @@ void OpenGLWidget::rotateY()         // Rotates the model at 360° around Y axis
             {
                 QMatrix4x4 temp;
                 temp.translate(memoryPos.at(referenceModel)-distanceCoordInit);
-                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(0,1,0), -time.elapsed()*rotationSpeed/1000));
+                temp.rotate(QQuaternion::fromAxisAndAngle(QVector3D(0,1,0), time.elapsed()*rotationSpeed/1000));
                 temp.translate(-memoryPos.at(referenceModel)+distanceCoordInit);
 
                 QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
 
                 distanceCoordinates1 = distanceCoordInit + translation;
-                tagsRotation = tagsRotationInit *
-                    QQuaternion::fromAxisAndAngle(orthonormalDistance, -time.elapsed()*rotationSpeed/1000);
+                tagsRotation =
+                    QQuaternion::fromAxisAndAngle(orthonormalDistance, time.elapsed()*rotationSpeed/1000) * tagsRotationInit;
             }
         }
 

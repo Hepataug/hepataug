@@ -1,13 +1,13 @@
 #include "GLtexture.h"
 
-GLtexture::GLtexture()
+GLtexture::GLtexture()  // Contains the background texture
 {
-    glGenTextures(1, &texture[0]);
-    screenshotNumber = 1;
+    glGenTextures(1, &texture[0]);  // Texture initialization
+    screenshotNumber = 1;   // Number of screenshots taken
 }
 
 
-void GLtexture::setTexture(QString texturePath)
+void GLtexture::setTexture(QString texturePath) // Set texture from an image file
 {
     glBindTexture(GL_TEXTURE_2D, texture[0]);
 
@@ -20,7 +20,7 @@ void GLtexture::setTexture(QString texturePath)
     glTexImage2D(GL_TEXTURE_2D, 0, 3, qim_Texture.width(), qim_Texture.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, qim_Texture.bits());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
-void GLtexture::setTexture(Mat textureMat)
+void GLtexture::setTexture(Mat textureMat)  // Set texture from an OpenCV matrix
 {
     glBindTexture(GL_TEXTURE_2D, texture[0]);
 
@@ -35,7 +35,7 @@ void GLtexture::setTexture(Mat textureMat)
     glTexImage2D(GL_TEXTURE_2D, 0, 3, qim_Texture.width(), qim_Texture.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, qim_Texture.bits());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
-void GLtexture::saveTexture(Mat textureMat, QString path)
+void GLtexture::saveTexture(Mat textureMat, QString path)   // Takes a screenshot of the texture into an image file
 {
     QImage qim_Texture = matToQImage(textureMat);
 
@@ -47,7 +47,7 @@ void GLtexture::saveTexture(Mat textureMat, QString path)
     screenshotNumber++;
 }
 
-QImage GLtexture::matToQImage(Mat const& image)
+QImage GLtexture::matToQImage(Mat const& image) // Convert an OpenCV matrix into a QImage
 {
     Mat temp;
     cvtColor(image, temp, CV_BGR2RGB);
@@ -57,7 +57,7 @@ QImage GLtexture::matToQImage(Mat const& image)
 }
 
 
-void GLtexture::setResizeWidget(bool newValue)
+void GLtexture::setResizeWidget(bool newValue)  // Set if the OpenGLWidget will be resized with the texture size or not
 {
     resizeWidget = newValue;
 }

@@ -28,12 +28,12 @@ private:
     ModelsListWidget *list;
 
 
-   // Left Toolbar
+  // Left Toolbar
     QToolBar *leftToolBar;
     QAction *distance, *frameByFrame;
 
 
-   // Right toolbar
+  // Right toolbar
     QToolBar *rightToolBar;
     QSlider *opacitySlider, *scaleSlider;
 
@@ -41,7 +41,7 @@ private:
     GLuint screenshotNumber;    // Number of screenshots taken
 
 
-   // Settings
+  // Settings
     QLineEdit *framePictureRatioLineEdit, *rotationSpeedLineEdit, *tagsRadiusLineEdit, *tumorRadiusLineEdit, *tumorDepthLineEdit;
     QLineEdit *alphaX, *alphaY, *skewness, *centerX, *centerY, *near, *far;
     QLineEdit *sensibilityLineEdit, *sensibilityPlusLineEdit;
@@ -50,10 +50,13 @@ private:
 private slots :
     void resizeMainWindow(GLuint newWidth, GLuint newHeight);
     void distanceMode();
+
     void setVideoPath();
     void frameByFrameMode();
-    void screenshot();
+
+    void takeScreenshot();
     void screenshot(QString path);
+
     void addModel();
 
 
