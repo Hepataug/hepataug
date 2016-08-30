@@ -26,7 +26,8 @@ ModelsListWidget::ModelsListWidget(QWidget *parent) : QListWidget(parent)
 
     /* ============================ CONNECTIONS ============================ */
 
-    connect(this, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(changeCheckState(QListWidgetItem*)));
+    connect(this, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(setSelected(QListWidgetItem*)));
+    connect(this, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(emitReferenceModel()));
     connect(this, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(updateCheckedModels()));
 
     connect(addModelButton, SIGNAL(triggered()), this, SLOT(emitAddModel()));
@@ -173,10 +174,9 @@ void ModelsListWidget::changeItemsFont()
     emit referenceModelChanged(referenceModel);
 }
 
-void ModelsListWidget::changeCheckState(QListWidgetItem* item)
+void ModelsListWidget::setSelected(QListWidgetItem* item)
 {
-    if(item->checkState() == Qt::Checked)
-        item->setCheckState(Qt::Unchecked);
-    else
-        item->setCheckState(Qt::Checked);
+    for(GLuint i = 0; i < (GLuint)pathsList.size(); i++)
+        if(pathsList.at(i).contains(item->text()))
+            selectedItem = pathsList.at(i);
 }

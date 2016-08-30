@@ -53,7 +53,7 @@ public slots:
     void updateModelsList(QStringList items);
     void updateCheckedModels();
 
-    void changeCheckState(QListWidgetItem* item);
+    void setSelected(QListWidgetItem* item);
 };
 
 #endif // MODELSLISTWIDGET_H

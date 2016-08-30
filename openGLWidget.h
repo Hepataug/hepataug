@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QTimer>
+#include <QOpenGLWidget>
 
 #include "trackBall.h"
 #include "GLtexture.h"
@@ -61,6 +62,7 @@ private:
     GLfloat scaleFactor;
     GLfloat sensibility, sensibilityPlus;
     GLfloat rotationSpeed;
+    QPointF screenCoordinates;
     QVector3D surfaceCoordinates, distanceCoordinates1, distanceCoordinates2; // Coordinates displayed when model clicked
     QQuaternion tagsRotation;
     GLfloat distanceBetweenTags;
@@ -90,8 +92,8 @@ private:
     void frameByFrameScreenshot(Mat frame);
 
     void resizeWidget();
-    void createCrosshair(QPointF screenCoordinates);
-    void createTags(QPointF screenCoordinates);
+    void createCrosshair();
+    void createTags();
 
     void mouseMoveEvent(QMouseEvent *e);
     void mousePressEvent(QMouseEvent *e);
@@ -101,7 +103,7 @@ private:
 
     void multMatrix(const QMatrix4x4& m);
     QPointF pixelPosToViewPos(const QPointF &p);
-    QVector3D screenToModelPixel(const QPointF screenCoordinates);
+    void screenToModelPixel();
 
 
 signals:

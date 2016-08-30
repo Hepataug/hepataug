@@ -29,14 +29,8 @@ OpenGLWidget::OpenGLWidget(QWidget *parent) : QGLWidget(parent)
 void OpenGLWidget::initializeGL()   // OPENGL SPACE INITIALIZATION
 {
     glEnable(GL_BLEND);                                 // Opacity ON
-
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // Opacity parameters
-
-    glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE_ARB);
-
-
-
-
+    glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
   // Default texture initialization
     backgroundTexture.setTexture(QString("./img/standardPicture1.jpg"));
@@ -190,46 +184,10 @@ void OpenGLWidget::paintGL()
     glPopMatrix();
 
 
-    glActiveTextureARB(GL_TEXTURE0_ARB);
-    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_2D);
-    QMatrix4x4 m;
-    glActiveTextureARB(GL_TEXTURE1_ARB);
-    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_DOT_PRODUCT_NV);
-    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_PREVIOUS_TEXTURE_INPUT_NV, GL_TEXTURE0_ARB);
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-    glPopMatrix();
-    glMatrixMode(GL_TEXTURE);
-    glLoadIdentity();
-    glTranslatef( 0, 0,.5);
-    glScalef( 0, 0, .5);
-    glMatrixMode(GL_MODELVIEW);
-    glActiveTextureARB(GL_TEXTURE2_ARB);
-    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_DOT_PRODUCT_DEPTH_REPLACE_NV);
-    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_PREVIOUS_TEXTURE_INPUT_NV, GL_TEXTURE0_ARB);
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
-    glPushMatrix();
-    glLoadIdentity();
-    glPopMatrix();
-    glMatrixMode(GL_TEXTURE);
-    glLoadIdentity();
-    m(0,0) = 0;   m(0,1) = 0;   m(0,2) = 0;   m(0,3) = 0;
-    m(1,0) = 0;   m(1,1) = 0;   m(1,2) = 0;   m(1,3) = 0;
-    m(2,0) = 0;   m(2,1) = 0;   m(2,2) = 0;   m(2,3) = 1;  // move q to r
-    m(3,0) = 0;   m(3,1) = 0;   m(3,2) = 0;   m(3,3) = 0;
-    multMatrix(m);
-    glMatrixMode(GL_MODELVIEW);
-    glActiveTextureARB(GL_TEXTURE3_ARB);
-    glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_RECTANGLE_NV);
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
-    glActiveTextureARB(GL_TEXTURE0_ARB);
-
 
 
 // MODELS
-    for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
+    for(GLint modelNumber = modelsList.size()-1; modelNumber >= 0; modelNumber--)
     {
         Model currentModel = model.getModelSettings(modelNumber);
 
@@ -238,9 +196,9 @@ void OpenGLWidget::paintGL()
         glPushMatrix();
             glTranslatef(currentModel.position.x(), currentModel.position.y(), currentModel.position.z());
 
-            QMatrix4x4 m;
-            m.rotate(currentModel.rotation);
-            multMatrix(m);
+            r = QMatrix4x4();
+            r.rotate(currentModel.rotation);
+            multMatrix(r);
 
             if(currentModel.tumorRadius > 0)
                 glScalef(currentModel.tumorRadius/0.33, currentModel.tumorRadius/0.33, currentModel.tumorRadius/0.33);
@@ -282,11 +240,14 @@ void OpenGLWidget::paintGL()
     }
 
     if(distanceBetweenTags)
-        renderText(10, 50, QString("Distance between tags: %1 cm").arg(QString::number(abs(distanceBetweenTags/10), 'f', 2)), font);
+        renderText(width()-294, 50, QString("Distance between tags: %1 cm").arg(QString::number(abs(distanceBetweenTags/10), 'f', 2)), font);
 
     if(crosshair)
     {
-        renderText(10, 25, QString("X: %1    Y: %2    Z: %3 cm")
+        renderText(10, 25, QString("U: %1    V: %2 px")
+                .arg(screenCoordinates.x())
+                .arg(screenCoordinates.y()), font);
+        renderText(10, 50, QString("X: %1    Y: %2    Z: %3 cm")
                 .arg(QString::number(surfaceCoordinates.x()/10, 'f', 2))
                 .arg(QString::number(surfaceCoordinates.y()/10, 'f', 2))
                 .arg(QString::number(-surfaceCoordinates.z()/10, 'f', 2)), font);
@@ -892,7 +853,7 @@ void OpenGLWidget::createTumor()
     model.setModelSettings(tumor, modelsList.size()-1);
     updateGL();
 }
-void OpenGLWidget::createCrosshair(QPointF screenCoordinates)
+void OpenGLWidget::createCrosshair()
 {
     crosshair = glGenLists(1);
     glLineWidth(2);
@@ -917,7 +878,7 @@ void OpenGLWidget::setDistanceMode(bool buttonChecked)
 {
     distanceMode = buttonChecked;
 }
-void OpenGLWidget::createTags(QPointF screenCoordinates)
+void OpenGLWidget::createTags()
 {
     if(!distanceCoordinates2.isNull())
     {
@@ -933,7 +894,7 @@ void OpenGLWidget::createTags(QPointF screenCoordinates)
     if(distanceCoordinates1.isNull())   // First tag
     {
         distanceBetweenTags = 0;
-        distanceCoordinates1 = screenToModelPixel(screenCoordinates);
+        distanceCoordinates1 = surfaceCoordinates;
 
         glNewList(tags, GL_COMPILE);
             gluSphere(params, tagsRadius/scaleFactor, 20, 20);
@@ -942,7 +903,7 @@ void OpenGLWidget::createTags(QPointF screenCoordinates)
     else    // First and second tags
     {
         GLfloat radius = tagsRadius/scaleFactor;
-        distanceCoordinates2 = screenToModelPixel(screenCoordinates);
+        distanceCoordinates2 = surfaceCoordinates;
 
         glNewList(tags, GL_COMPILE);
             gluSphere(params, radius, 20, 20);
@@ -1022,17 +983,21 @@ void OpenGLWidget::mousePressEvent(QMouseEvent *e)
     if(e->buttons() & Qt::LeftButton && !checkedModels.isEmpty())
     {
         updateGL();
-        QPointF screenCoordinates = e->localPos();
-        surfaceCoordinates = screenToModelPixel(screenCoordinates);
+        screenCoordinates = e->localPos();
+        screenToModelPixel();
 
-        createCrosshair(screenCoordinates);
+        createCrosshair();
 
         setCursor(Qt::ClosedHandCursor);
 
         trackball.push(pixelPosToViewPos(screenCoordinates));
     }
     else if(e->buttons() & Qt::RightButton && distanceMode)
-        createTags(e->localPos());
+    {
+        screenCoordinates = e->localPos();
+        screenToModelPixel();
+        createTags();
+    }
 }
 void OpenGLWidget::mouseReleaseEvent(QMouseEvent*)
 {
@@ -1181,7 +1146,7 @@ QPointF OpenGLWidget::pixelPosToViewPos(const QPointF& p)    // Sets pixel coord
 {
     return QPointF(2.0*GLfloat(p.x())/width()-1.0, 1.0-2.0*GLfloat(p.y())/height());
 }
-QVector3D OpenGLWidget::screenToModelPixel(const QPointF screenCoordinates) // Sets 2D screen coordinates to 3D model coordinates
+void OpenGLWidget::screenToModelPixel() // Sets 2D screen coordinates to 3D model coordinates
 {
     GLint viewport[4];
     GLdouble modelview[16];
@@ -1196,8 +1161,7 @@ QVector3D OpenGLWidget::screenToModelPixel(const QPointF screenCoordinates) // S
     glReadPixels((float)screenCoordinates.x(), viewport[3]-screenCoordinates.y(), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
     gluUnProject((float)screenCoordinates.x(), (float)(viewport[3]-screenCoordinates.y()), winZ, modelview, projection, viewport, &posX, &posY, &posZ);
 
-    QVector3D pos(posX, posY, posZ);
-    return QVector3D(pos.x(),pos.y(),pos.z());
+    surfaceCoordinates = QVector3D(posX, posY, posZ);
 }
 
 
