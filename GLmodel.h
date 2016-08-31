@@ -7,7 +7,7 @@
 #include <QVector2D>
 
 
-struct Face{
+struct Face{    // One face parameters
     QVector<QVector4D> v, vn;
     QVector<QVector3D> t;
 
@@ -16,7 +16,7 @@ struct Face{
            t.resize(4);}
 };
 
-struct Model{
+struct Model{   // One model parameters
 
 public :
     GLuint texture[1], model;
@@ -49,7 +49,7 @@ public:
     void loadTexture(QString textureName, GLuint modelNumber);
 
 private:
-    QVector<Face> Faces;    //f
+    QVector<Face> Faces;    // Faces list
     QVector<Model> Models;  // Models list
 
     void loadMTL(QString MTLPath, GLuint modelNumber);

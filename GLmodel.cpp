@@ -1,24 +1,24 @@
 ﻿#include "GLmodel.h"
 
 
-GLmodel::GLmodel(){}
+GLmodel::GLmodel(){}// Creates an object GLmodel which contains the models displaylist
 
 
-void GLmodel::loadModel(QString fileName, GLuint firstModelNumber)
+void GLmodel::loadModel(QString fileName, GLuint firstModelNumber)  // Add the selected model(s) to the display list
 {
     /* ============================ READING FILE ============================ */
 
     if(fileName.isEmpty())
         return;
 
-    QFile file(fileName);
+    QFile file(fileName);       // Opens the .obj file
     if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return;
 
-    QTextStream fileText(&file);
-    QString buffer;
-    bool loop = true;
-    GLuint numberObject = 0;
+    QTextStream fileText(&file);    // Creates a QTextStream to read the .obj file
+    QString buffer; // Contains the model name
+    bool loop = true;   // Enters in the "for" loop
+    GLuint numberObject = 0;    // Number of the first object in the .obj file
 
     for(GLuint modelNumber = firstModelNumber; loop; modelNumber++)
     {
@@ -32,23 +32,24 @@ void GLmodel::loadModel(QString fileName, GLuint firstModelNumber)
         QVector2D temp2D;
         loop = false;
 
-        Model currentModel;     // New Model
-        Models.push_back(currentModel); // Adding new model to the list
+        Model currentModel;     // Creates a new Model
+        Models.push_back(currentModel); // Adding new model to the display list
         Models[modelNumber].fileName = fileName;
         Models[modelNumber].modelName = buffer;
 
         while(!fileText.atEnd())
         {
-            QString fileLine = fileText.readLine();
-            fileLine = fileLine.simplified();
+            QString fileLine = fileText.readLine(); // Read the current line
+            fileLine = fileLine.simplified();       // Simplify the current line
 
+          // If the current line begins by...
           // O
             if(fileLine.startsWith("o "))
             {
                 numberObject++;
                 QStringList lineList = fileLine.split(" ");
 
-                if(numberObject>1)
+                if(numberObject>1)  // If the file contains several models
                 {
                     buffer = lineList[1];
                     loop = true;
@@ -62,21 +63,21 @@ void GLmodel::loadModel(QString fileName, GLuint firstModelNumber)
           // VN
             if(fileLine.startsWith("vn "))
             {
-                Models[modelNumber].vnFile = true;
+                Models[modelNumber].vnFile = true;  // The file contains texture coordinates
 
-                while(fileLine.contains(","))       // If necessary, replaces ',' with '.'
+                while(fileLine.contains(","))       // If necessary, replaces the character ',' with '.'
                     fileLine = fileLine.replace(fileLine.indexOf(",", 1),1,".");
 
                 QStringList lineList = fileLine.split(" ");
 
                 temp3D = QVector3D(lineList[1].toFloat(), lineList[2].toFloat(), lineList[3].toFloat());
-                VNormals.push_back(temp3D);
+                VNormals.push_back(temp3D); // Saves the vn coordinates
             }
 
           // VT
             else if(fileLine.startsWith("vt "))
             {
-                Models[modelNumber].vtFile = true;
+                Models[modelNumber].vtFile = true;  // The file contains normal coordinates
 
                 while(fileLine.contains(","))       // If necessary, replaces ',' with '.'
                     fileLine = fileLine.replace(fileLine.indexOf(",", 1),1,".");
@@ -84,7 +85,7 @@ void GLmodel::loadModel(QString fileName, GLuint firstModelNumber)
                 QStringList lineList = fileLine.split(" ");
 
                 temp2D = QVector2D(lineList[1].toFloat(), lineList[2].toFloat());
-                VTexture.push_back(temp2D);
+                VTexture.push_back(temp2D); // Saves the vt coordinates
             }
 
           // V
@@ -96,10 +97,10 @@ void GLmodel::loadModel(QString fileName, GLuint firstModelNumber)
                 QStringList lineList = fileLine.split(" ");
 
                 temp3D = QVector3D(lineList[1].toFloat(), lineList[2].toFloat(), lineList[3].toFloat());
-                Vertices.push_back(temp3D);
+                Vertices.push_back(temp3D); // Saves the vertex coordinates
 
-                if (xMin==0 || temp3D.x() < xMin)   // Records the min and max coordinates values...
-                    xMin = temp3D.x();              //...to calculate the model center "origin"
+                if (xMin==0 || temp3D.x() < xMin)   // Records the min and max coordinates values
+                    xMin = temp3D.x();              //to calculate the model center "origin"
                 if (yMin==0 || temp3D.y() < yMin)
                     yMin = temp3D.y();
                 if (zMin==0 || temp3D.z() < zMin)
@@ -118,7 +119,7 @@ void GLmodel::loadModel(QString fileName, GLuint firstModelNumber)
                 Face F;
                 QStringList lineList = fileLine.split(" ");
 
-                for(int i = 1; i <= 3; i++)
+                for(int i = 1; i <= 3; i++) // Saves the face references (vertex, vt, vn number) into a buffer
                 {
                     QStringList arg = lineList[i].split("/");
 
@@ -128,7 +129,7 @@ void GLmodel::loadModel(QString fileName, GLuint firstModelNumber)
                     if(Models.at(modelNumber).vnFile)
                         F.vn[i-1] = VNormals[arg[2].toInt()-1];
                 }
-                if(lineList.size()==5)
+                if(lineList.size()==5)  // If the face is a quadrilateral, adds a fourth coordinate
                 {
                     Models[modelNumber].squareFile = true;
                     QStringList arg = lineList[4].split("/");
@@ -139,38 +140,40 @@ void GLmodel::loadModel(QString fileName, GLuint firstModelNumber)
                     if(Models.at(modelNumber).vnFile)
                         F.vn[3] = VNormals[arg[2].toInt()-1];
                 }
-                Faces.push_back(F);
+                Faces.push_back(F); // Saves the new face from the buffer
             }
 
           // MTLLIB
             else if(fileLine.startsWith("mtllib "))
             {
                 QStringList lineList = fileLine.split(" ");
-                Models[modelNumber].mtllib = lineList[1];
+                Models[modelNumber].mtllib = lineList[1];   // Saves the mtllib file path
             }
         }
 
-        if(Models[modelNumber].modelName.isEmpty())
+        if(Models[modelNumber].modelName.isEmpty()) // If the file contains no "o" line, the model number becomes the file number
             Models[modelNumber].modelName = fileName;
 
 
-        QFileInfo fi(fileName);
-        QString BaseName = fi.fileName();
-        QString MTLPath(fileName);
-        MTLPath.remove(MTLPath.size() - BaseName.size(), BaseName.size());
+        if(!Models.at(modelNumber).mtllib.isEmpty())  // If the file contains the path to a mtllib file, loads it
+        {
+            QFileInfo fi(fileName);
+            QString BaseName = fi.fileName();
+            QString MTLPath(fileName);
+            MTLPath.remove(MTLPath.size() - BaseName.size(), BaseName.size());
 
-        if(!Models.at(modelNumber).mtllib.isEmpty())
             loadMTL(MTLPath, modelNumber);
-        else
+        }
+        else    // Else the model color is set to the default color
             Models[modelNumber].color = QVector4D(1.f, 0.f, 0.f, 1.f);
 
 
       // Calculates the model center coordinates
         Models[modelNumber].origin = QVector3D(xMin+((xMax-xMin)/2), yMin+((yMax-yMin)/2), zMin+((zMax-zMin)/2));
-        Models[modelNumber].position = Models.at(modelNumber).origin;
+        Models[modelNumber].position = Models.at(modelNumber).origin;   // Puts the model at its origin
 
 
-    /* ============================ DRAW MODEL INTO DISPLAYLIST ============================ */
+    /* ============================ DRAWING MODEL INTO DISPLAYLIST ============================ */
 
         Models[modelNumber].model = glGenLists(1);
         glNewList(Models[modelNumber].model, GL_COMPILE);
@@ -205,9 +208,9 @@ void GLmodel::loadModel(QString fileName, GLuint firstModelNumber)
 }
 
 
-void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber, bool assemble)
+void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber, bool assemble)    // Save model(s) into a new .obj file
 {
-    if(assemble)
+    if(assemble)    // If we save several models into the file
     {
         QChar newModelName_ch[newModelsNames.at(0).size()];     // Checking if .obj extension was seized during file creation
         QString extension;
@@ -246,7 +249,7 @@ void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber
 
         for(GLuint n = 0; n < (GLuint)modelsNumber.size(); n++)
         {
-            /* ============================ FILE READING ============================ */
+            /* ============================ FILES READING/WRITTING ============================ */
 
             QString modelName = Models.at(modelsNumber.at(n)).fileName;
             QFile file(modelName);
@@ -313,6 +316,7 @@ void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber
                     QStringList lineList = fileLine.split(" ");
                     QVector3D coords(lineList[1].toFloat(), lineList[2].toFloat(), lineList[3].toFloat());
 
+                  // Applying the transformations to the model's vertex
                     if(Models.at(modelsNumber.at(n)).tumorRadius > 0)
                         coords = r * (coords*Models.at(modelsNumber.at(n)).tumorRadius/0.33 - Models.at(modelsNumber.at(n)).origin) + Models.at(modelsNumber.at(n)).position;
                     else
@@ -421,7 +425,7 @@ void GLmodel::saveModel(QStringList newModelsNames, QVector<GLuint> modelsNumber
         newFile.close();
     }
 
-    else
+    else    // If we only save one model into the file
         for(GLuint n = 0; n < (GLuint)modelsNumber.size(); n++)
         {
             QChar newModelName_ch[newModelsNames.at(n).size()];     // Checking if .obj extension was seized during file creation
@@ -618,7 +622,7 @@ void GLmodel::removeModel(GLuint modelNumber)
 
 
 /* ============================ TEXTURE ============================ */
-void GLmodel::loadMTL(QString MTLPath, GLuint modelNumber)
+void GLmodel::loadMTL(QString MTLPath, GLuint modelNumber)  // Reads the mtllib file to fin the texture path
 {
     QFile file(MTLPath + Models.at(modelNumber).mtllib);
     if(file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -649,7 +653,7 @@ void GLmodel::loadMTL(QString MTLPath, GLuint modelNumber)
     }
     file.close();
 }
-void GLmodel::loadTexture(QString textureName, GLuint modelNumber)
+void GLmodel::loadTexture(QString textureName, GLuint modelNumber)  // Reads the texture file and loads it
 {
     QImage textureImg = QImage(textureName);
     GLuint currentTexture;
@@ -668,7 +672,7 @@ void GLmodel::loadTexture(QString textureName, GLuint modelNumber)
 
 
 /* ============================ OPENGL TASKS ============================ */
-void GLmodel::calculateNormal(GLuint i, GLuint modelNumber)
+void GLmodel::calculateNormal(GLuint i, GLuint modelNumber) // Calculates the normal of a face if there is no one in the .obj file
 {
     if(!Models.at(modelNumber).vnFile)
         glNormal3f(
@@ -712,14 +716,14 @@ Model GLmodel::getModelSettings(GLuint modelNumber)
 {
     return Models.at(modelNumber);
 }
-GLuint GLmodel::getModelSize()
+GLuint GLmodel::getModelSize()  // Sends the size of the models list
 {
     return Models.size();
 }
 
 
 /* ============================ SETTERS ============================ */
-void GLmodel::setModelSettings(Model newModel, GLuint modelNumber)
+void GLmodel::setModelSettings(Model newModel, GLuint modelNumber) // Modifies a model parameters
 {
     Models[modelNumber] = newModel;
 }

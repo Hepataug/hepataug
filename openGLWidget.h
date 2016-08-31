@@ -66,8 +66,9 @@ private:
     QVector3D surfaceCoordinates, distanceCoordinates1, distanceCoordinates2; // Coordinates displayed when model clicked
     QQuaternion tagsRotation;
     GLfloat distanceBetweenTags;
+
     qreal cameraParameters[8];
-/*
+/*  CAMERA PARAMETERS :
  *  cameraParameters[0] = alphaX, focal (px)
  *  cameraParameters[1] = alphaY, focal (px)
  *  cameraParameters[2] = skewness
