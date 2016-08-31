@@ -51,18 +51,18 @@ private:
 
     VideoCapture cap;
     bool frameByFrameMode;
-    QString framesFolder;
-    GLuint screenshotNumber;
+    QString framesFolder;   // Folder in which the screenshots from the "Frame By Frame Mode" will be saved
+    GLuint screenshotNumber;    // Number of screenshots taken
 
-    QVector<GLuint> checkedModels;
+    QVector<GLuint> checkedModels;  // List of models checked
     QString selectedModel;
     GLint referenceModel;
 
     GLfloat frame_picture_Ratio;
-    GLfloat scaleFactor;
-    GLfloat sensibility, sensibilityPlus;
-    GLfloat rotationSpeed;
-    QPointF screenCoordinates;
+    GLfloat scaleFactor;    // Scale factor for the OpenGL unit is the meter
+    GLfloat sensibility, sensibilityPlus;   // Displacement sensibility (in m)
+    GLfloat rotationSpeed;  // Rotation speed with "Rotate X/Y" buttons (in °/s)
+    QPointF screenCoordinates;  // Coordinates of the widget pixel clicked (px)
     QVector3D surfaceCoordinates, distanceCoordinates1, distanceCoordinates2; // Coordinates displayed when model clicked
     QQuaternion tagsRotation;
     GLfloat distanceBetweenTags;
@@ -80,9 +80,9 @@ private:
  */
 
     bool scaleSliderPressed, distanceMode;
-    GLuint picture, crosshair, tags; //DisplayLists
+    GLuint picture, crosshair, tags; // DisplayLists
     GLfloat defaultTumorRadius, tumorDepth, tagsRadius; // Radius of the tumor, tags and depth of the tumor (m)
-    QStringList modelsList;                 // List of loaded models
+    QStringList modelsList;     // List of loaded models
 
     void initializeGL();
     void paintGL();

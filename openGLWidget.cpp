@@ -10,9 +10,9 @@ OpenGLWidget::OpenGLWidget(QWidget *parent) : QGLWidget(parent)
     scaleFactor = 0.001;                         // Millimeters to meters conversion
     frame_picture_Ratio = 0.1;                   // Size of the black frame relative to image size
     sensibility = 0.01, sensibilityPlus = 0.001; // Sensibility of the translation (m)
-    rotationSpeed = 360;
-    referenceModel = -1;
-    screenshotNumber = 1;
+    rotationSpeed = 360;                         // Rotation speed with "Rotate X/Y" buttons (°/s)
+    referenceModel = -1;                         // Reference model OFF
+    screenshotNumber = 1;                        // Number of screenshots taken
 
     defaultTumorRadius = 0.05;                   // Default radius of the tumor (m)
     tumorDepth = 0.3;                            // Default depth of the tumor (m)
@@ -30,13 +30,12 @@ void OpenGLWidget::initializeGL()   // OPENGL SPACE INITIALIZATION
 {
     glEnable(GL_BLEND);                                 // Opacity ON
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // Opacity parameters
-    glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
   // Default texture initialization
     backgroundTexture.setTexture(QString("./img/standardPicture1.jpg"));
     resizeWidget();
 
-  // Picture's QUAD creation in a displaylist
+  // Background's QUAD creation in a displaylist
     picture = glGenLists(1);
     glNewList(picture, GL_COMPILE);
         glBegin(GL_TRIANGLES);
@@ -56,51 +55,41 @@ void OpenGLWidget::initializeGL()   // OPENGL SPACE INITIALIZATION
 }
 void OpenGLWidget::resetCameraSettings()
 {
-/*        // DEFAULT
-        cameraParameters[0] = 1000;   // alphaX, focal (px)
-        cameraParameters[1] = 1000;   // alphaY, focal (px)
-        cameraParameters[2] = 0;      // skewness
-        cameraParameters[3] = 250;    // u, image center abscissa (px)
-        cameraParameters[4] = 187.5;  // v, image center ordinate (px)
-
-        // PICTURES N°1
-        cameraParameters[0] = 3260.4904041680534;  // alphaX, focal (px)
-        cameraParameters[1] = 3247.8133528848193;  // alphaY, focal (px)
-        cameraParameters[2] = 9.1996636861168586;  // skewness
-        cameraParameters[3] = 580.40611599810813;  // u, image center abscissa (px)
-        cameraParameters[4] = 572.27194900491202;  // v, image center ordinate (px)*/
-
-        // PICTURES N°2
-        cameraParameters[0] = 3215.0213146269689;  // alphaX, focal (px)
-        cameraParameters[1] = 3227.1754390328997;  // alphaY, focal (px)
-        cameraParameters[2] = 8.7179384749909108;  // skewness
-        cameraParameters[3] = 483.46333094489626;  // u, image center abscissa (px)
-        cameraParameters[4] = 472.53980666143559;  // v, image center ordinate (px)
 /*
-        // PICTURES N°3
-        cameraParameters[0] = 3232.528030290006;   // alphaX, focal (px)
-        cameraParameters[1] = 3248.4333523027763;  // alphaY, focal (px)
-        cameraParameters[2] = 14.659490990087299;  // skewness
-        cameraParameters[3] = 716.19859622776949;  // u, image center abscissa (px)
-        cameraParameters[4] = 443.6688114873711;   // v, image center ordinate (px)
+  // PICTURES SET N°1
+    cameraParameters[0] = 3260.4904041680534;  // alphaX, focal (px)
+    cameraParameters[1] = 3247.8133528848193;  // alphaY, focal (px)
+    cameraParameters[2] = 9.1996636861168586;  // skewness
+    cameraParameters[3] = 580.40611599810813;  // u, image center abscissa (px)
+    cameraParameters[4] = 572.27194900491202;  // v, image center ordinate (px)
 */
-        // PICTURES SURGERY
-/*        cameraParameters[0] = 2093.88374;  // alphaX, focal (px)
-        cameraParameters[1] = 2093.88374;  // alphaY, focal (px)
-        cameraParameters[2] = 0.00000;     // skewness
-        cameraParameters[3] = 959.50000;   // u, image center abscissa (px)
-        cameraParameters[4] = 539.50000;   // v, image center ordinate (px)*/
 
+  // PICTURES SET N°2
+    cameraParameters[0] = 3215.0213146269689;  // alphaX, focal (px)
+    cameraParameters[1] = 3227.1754390328997;  // alphaY, focal (px)
+    cameraParameters[2] = 8.7179384749909108;  // skewness
+    cameraParameters[3] = 483.46333094489626;  // u, image center abscissa (px)
+    cameraParameters[4] = 472.53980666143559;  // v, image center ordinate (px)
 
-        // PATIENT 2
-       /* cameraParameters[0] = 945.26018;  // alphaX, focal (px)
-        cameraParameters[1] = 945.26018;  // alphaY, focal (px)
-        cameraParameters[2] = 0;  // skewness
-        cameraParameters[3] = 639.5;  // u, image center abscissa (px)
-        cameraParameters[4] = 359.5;  // v, image center ordinate (px)*/
+/*
+  // PICTURES SET N°3
+    cameraParameters[0] = 3232.528030290006;   // alphaX, focal (px)
+    cameraParameters[1] = 3248.4333523027763;  // alphaY, focal (px)
+    cameraParameters[2] = 14.659490990087299;  // skewness
+    cameraParameters[3] = 716.19859622776949;  // u, image center abscissa (px)
+    cameraParameters[4] = 443.6688114873711;   // v, image center ordinate (px)
+*/
+/*
+  // PATIENT 2
+    cameraParameters[0] = 945.26018;  // alphaX, focal (px)
+    cameraParameters[1] = 945.26018;  // alphaY, focal (px)
+    cameraParameters[2] = 0;          // skewness
+    cameraParameters[3] = 639.5;      // u, image center abscissa (px)
+    cameraParameters[4] = 359.5;      // v, image center ordinate (px)
+*/
 
-        cameraParameters[5] = 0.001;       // near, distance to the nearer depth clipping plane (m)
-        cameraParameters[6] = 1000;        // far, distance to the farther depth clipping plane (m)
+    cameraParameters[5] = 0.001;       // near, distance to the nearer depth clipping plane (m)
+    cameraParameters[6] = 1000;        // far, distance to the farther depth clipping plane (m)
 }
 
 
@@ -110,8 +99,8 @@ void OpenGLWidget::paintGL()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Buffers cleared
 
 
-    glMatrixMode(GL_PROJECTION);                        // Set projection matrix as current matrix
-    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);                        // Sets projection matrix as current matrix
+    glLoadIdentity();                                   // Clears projection matrix
     GLfloat scale = frame_picture_Ratio*cameraParameters[7];
     glViewport(backgroundTexture.getWidth()*scale, backgroundTexture.getHeight()*scale, // Drawable area in the widget
                (GLint)width()-(2*backgroundTexture.getWidth()*scale),
@@ -120,11 +109,11 @@ void OpenGLWidget::paintGL()
 
 
 // BACKGROUND TEXTURE
-    glMatrixMode(GL_MODELVIEW);                             // Set model matrix as current matrix
+    glMatrixMode(GL_MODELVIEW);                             // Sets model matrix as current matrix
     glLoadIdentity();
 
     glEnable(GL_TEXTURE_2D);                                // Texture ON
-        glBindTexture(GL_TEXTURE_2D, backgroundTexture.getTexture()); // Texture load
+        glBindTexture(GL_TEXTURE_2D, backgroundTexture.getTexture()); // Texture loading
         glCallList(picture);
     glDisable(GL_TEXTURE_2D);                               // Texture OFF (enables color)
 
@@ -134,15 +123,14 @@ void OpenGLWidget::paintGL()
     glViewport(0, 0, (GLint)width(), (GLint)height());
     glEnable(GL_DEPTH_TEST);                                // Depth buffer ON
 
-    QMatrix4x4 perspective(cameraParameters[0]*cameraParameters[7], cameraParameters[2]*cameraParameters[7], -(cameraParameters[3]+backgroundTexture.getWidth()*frame_picture_Ratio)*cameraParameters[7], 0,
-                           0, cameraParameters[1]*cameraParameters[7], -(cameraParameters[4]+backgroundTexture.getHeight()*frame_picture_Ratio)*cameraParameters[7], 0,
-                           0, 0, (cameraParameters[5] + cameraParameters[6]), (cameraParameters[5] * cameraParameters[6]),
-                           0, 0, -1, 0);
+    glMatrixMode(GL_PROJECTION);
+    glOrtho(0, (GLfloat)width(), 0, (GLfloat)height(), cameraParameters[5], cameraParameters[6]);  // Sets orthographic camera matrix
 
-     glMatrixMode(GL_PROJECTION);
-     glOrtho(0, (GLfloat)width(), 0, (GLfloat)height(), cameraParameters[5], cameraParameters[6]);        // Setting orthographic camera matrix
-
-     multMatrix(perspective);             // Multiplication by perspective matrix
+  // Multiplication by perspective matrix
+    multMatrix(QMatrix4x4(cameraParameters[0]*cameraParameters[7], cameraParameters[2]*cameraParameters[7], -(cameraParameters[3]+backgroundTexture.getWidth()*frame_picture_Ratio)*cameraParameters[7], 0,
+                            0, cameraParameters[1]*cameraParameters[7], -(cameraParameters[4]+backgroundTexture.getHeight()*frame_picture_Ratio)*cameraParameters[7], 0,
+                            0, 0, (cameraParameters[5] + cameraParameters[6]), (cameraParameters[5] * cameraParameters[6]),
+                            0, 0, -1, 0));
 
 
 
@@ -169,7 +157,6 @@ void OpenGLWidget::paintGL()
 // TAGS
     glPushMatrix();
         glColor3f(1.f, 1.f, 1.f);
-
         glTranslatef(distanceCoordinates1.x(), distanceCoordinates1.y(), distanceCoordinates1.z());
 
         QMatrix4x4 r;
@@ -269,9 +256,9 @@ void OpenGLWidget::resizeWidget()
     GLfloat frames = (2*frame_picture_Ratio)+1;
     GLfloat scale = cameraParameters[7]*frames;
 
-    if(height()<width())
+    if(height() < width())
     {
-        if(backgroundTexture.getHeight()*scale>300)
+        if(backgroundTexture.getHeight()*scale > 300)
         {
             this->setFixedHeight(backgroundTexture.getHeight()*scale);
             this->setFixedWidth(backgroundTexture.getWidth()*scale);
@@ -285,7 +272,7 @@ void OpenGLWidget::resizeWidget()
     }
     else
     {
-        if(backgroundTexture.getWidth()*scale>300)
+        if(backgroundTexture.getWidth()*scale > 300)
         {
             this->setFixedHeight(backgroundTexture.getHeight()*scale);
             this->setFixedWidth(backgroundTexture.getWidth()*scale);
@@ -298,7 +285,7 @@ void OpenGLWidget::resizeWidget()
         }
     }
 
-    if(scaleSliderPressed==false)
+    if(scaleSliderPressed == false)
         emit pictureChanged(width()-20, height()-20);
 }
 void OpenGLWidget::setTexturePath()
@@ -354,7 +341,7 @@ bool OpenGLWidget::setVideoPath(bool frameByFrame)
 void OpenGLWidget::updateVideo()
 {
     Mat frame;
-    cap >> frame;       // Get a new frame from camera
+    cap >> frame;       // Gets a new frame from camera
 
     if(frameByFrameMode)
         frameByFrameScreenshot(frame);
@@ -441,7 +428,6 @@ void OpenGLWidget::removeModels()
         updateGL();
     }
     else
-    {
         for(GLint i = checkedModels.size()-1; i >= 0; i--)
         {
             modelsList.removeAt(checkedModels.at(i));
@@ -451,9 +437,6 @@ void OpenGLWidget::removeModels()
             emit modelsChanged();
             updateGL();
         }
-    }
-
-
 }
 void OpenGLWidget::saveModels()      // Saves the models with their transformations
 {
@@ -946,7 +929,6 @@ void OpenGLWidget::mouseMoveEvent(QMouseEvent *e)
 
                     QVector3D translation(temp.column(3).x(), temp.column(3).y(), temp.column(3).z());
 
-
                     currentModel.position += translation;
                 }
 
@@ -969,13 +951,12 @@ void OpenGLWidget::mouseMoveEvent(QMouseEvent *e)
             if(!distanceCoordinates2.isNull())
                 tagsRotation = trackball.rotation() * tagsRotation;
         }
-
         updateGL();
     }
 }
 void OpenGLWidget::mousePressEvent(QMouseEvent *e)
 {
-    if(e->buttons() & Qt::LeftButton && !checkedModels.isEmpty())
+    if(e->buttons() & Qt::LeftButton)
     {
         updateGL();
         screenCoordinates = e->localPos();
@@ -983,9 +964,11 @@ void OpenGLWidget::mousePressEvent(QMouseEvent *e)
 
         createCrosshair();
 
-        setCursor(Qt::ClosedHandCursor);
-
-        trackball.push(pixelPosToViewPos(screenCoordinates));
+        if(!checkedModels.isEmpty())
+        {
+            setCursor(Qt::ClosedHandCursor);
+            trackball.push(pixelPosToViewPos(screenCoordinates));
+        }
     }
     else if(e->buttons() & Qt::RightButton && distanceMode)
     {
@@ -1022,35 +1005,31 @@ void OpenGLWidget::wheelEvent(QWheelEvent *e)
 
     else
     {
-        QVector3D movement = QVector3D(0,0,move);
-
         if(checkedModels.contains(referenceModel))
             for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
             {
                 Model currentModel = model.getModelSettings(modelNumber);
-                currentModel.position += movement;
+                currentModel.position.setZ(currentModel.position.z() + move);
                 model.setModelSettings(currentModel, modelNumber);
             }
         else
             for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
                 if(checkedModels.contains(modelNumber))
                 {
-                    QVector3D tempMovement = movement;
-
                     Model currentModel = model.getModelSettings(modelNumber);
-                    currentModel.position += tempMovement;
+                    currentModel.position.setZ(currentModel.position.z() + move);
                     model.setModelSettings(currentModel, modelNumber);
                 }
 
         if(!distanceCoordinates1.isNull() && checkedModels.contains(referenceModel))
-            distanceCoordinates1 += movement;
+            distanceCoordinates1.setZ(distanceCoordinates1.z() + move);
     }
 
     updateGL();
 }
 void OpenGLWidget::keyPressEvent(QKeyEvent *e)
 {
-    GLfloat move = 0;
+    GLfloat move;
     QVector3D movement;
 
     if(e->modifiers() && Qt::ControlModifier)
@@ -1113,10 +1092,8 @@ void OpenGLWidget::keyPressEvent(QKeyEvent *e)
         for(GLuint modelNumber = 0; modelNumber < (GLuint)modelsList.size(); modelNumber++)
             if(checkedModels.contains(modelNumber))
             {
-                QVector3D tempMovement = movement;
-
                 Model currentModel = model.getModelSettings(modelNumber);
-                currentModel.position += tempMovement;
+                currentModel.position += movement;
                 model.setModelSettings(currentModel, modelNumber);
             }
 
@@ -1129,13 +1106,13 @@ void OpenGLWidget::keyPressEvent(QKeyEvent *e)
 
 
 /* ============================ OPERATORS ============================ */
-void OpenGLWidget::multMatrix(const QMatrix4x4& m)    // Multiplies QMatrix4x4 as a GLfloat matrix
+void OpenGLWidget::multMatrix(const QMatrix4x4& m)    // Multiplies the current projected matrix with the QMatrix4x4 m
 {
-     static GLfloat mat[16];
-     const GLfloat *data = m.constData();
-     for (GLint index = 0; index < 16; ++index)
+    static GLfloat mat[16];
+    const GLfloat *data = m.constData();
+    for(GLint index = 0; index < 16; ++index)
         mat[index] = data[index];
-     glMultMatrixf(mat);
+    glMultMatrixf(mat);
 }
 QPointF OpenGLWidget::pixelPosToViewPos(const QPointF& p)    // Sets pixel coordinates to view coordinates
 {
