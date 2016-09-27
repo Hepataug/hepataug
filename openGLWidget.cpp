@@ -619,7 +619,7 @@ void OpenGLWidget::rotateX()         // Rotates the model at 360° around X axis
 
         QMatrix4x4 m;
         m.rotate(currentModel.rotation);
-        orthonormals.push_back(m.transposed() * QVector3D(1,0,0));
+        orthonormals.push_back(QVector3D(1,0,0));
     }
     if(referenceModel >= 0 && !checkedModels.contains(referenceModel))
     {
@@ -712,7 +712,7 @@ void OpenGLWidget::rotateY()         // Rotates the model at 360° around Y axis
 
         QMatrix4x4 m;
         m.rotate(currentModel.rotation);
-        orthonormals.push_back(m.transposed() * QVector3D(0,1,0));
+        orthonormals.push_back(QVector3D(0,1,0));
     }
     if(referenceModel >= 0 && !checkedModels.contains(referenceModel))
     {
